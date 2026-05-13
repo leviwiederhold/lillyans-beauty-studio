@@ -73,12 +73,7 @@ export async function POST(request: Request) {
   const depositPercent = 20;
   const depositAmount = depositRequired && serviceTotal > 0 ? Math.round(serviceTotal * (depositPercent / 100)) : 0;
   const remainingBalance = Math.max(serviceTotal - depositAmount, 0);
-  if (depositRequired && serviceTotal <= 0) {
-    return NextResponse.json({ error: "This service is missing a service total, so a Square deposit cannot be calculated yet." }, { status: 500 });
-  }
-  if (depositRequired && depositAmount > 0 && !squareConfigured()) {
-    return NextResponse.json({ error: "Square checkout is not configured for deposits." }, { status: 500 });
-  }
+  const canCreateSquareCheckout = depositRequired && depositAmount > 0 && squareConfigured();
   const booking = await supabase.from("bookings").insert({
     client_id: client.data?.id || null,
     service_id: service.data.id,
@@ -90,7 +85,7 @@ export async function POST(request: Request) {
     starts_at: starts.toISOString(),
     ends_at: ends.toISOString(),
     deposit_required: depositRequired,
-    deposit_status: depositRequired && depositAmount > 0 ? "payment_link_pending" : "waived",
+    deposit_status: depositRequired ? canCreateSquareCheckout ? "payment_link_pending" : "pending" : "waived",
     waiver_reason: depositRequired ? null : "gift_card",
     gift_card_code_id: giftCardCodeId,
     service_total: serviceTotal,
@@ -124,11 +119,11 @@ export async function POST(request: Request) {
     });
   }
 
-  if (depositRequired && service.data.deposit_amount_cents) {
+  if (depositRequired && depositAmount > 0) {
     await supabase.from("deposits").insert({ booking_id: booking.data.id, amount_cents: depositAmount, status: "pending" });
   }
   let squareCheckoutUrl: string | null = null;
-  if (depositRequired && depositAmount > 0) {
+  if (canCreateSquareCheckout) {
     const square = await createSquareDepositLink({
       bookingId: booking.data.id,
       serviceName: service.data.name,
