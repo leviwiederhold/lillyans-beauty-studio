@@ -102,6 +102,7 @@ export async function POST(request: Request) {
   if (service.data.requires_intake) {
     await supabase.from("intake_forms").insert({
       client_id: client.data?.id || null,
+      user_id: userData.user.id,
       type: service.data.intake_type || "wedding_inquiry",
       service_label: service.data.name,
       service_details: {

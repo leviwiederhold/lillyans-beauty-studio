@@ -4,11 +4,12 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { safeNextPath } from "@/lib/auth/redirect";
 
 function SignupForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/account";
+  const next = safeNextPath(params.get("next"), "/account");
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -16,34 +17,41 @@ function SignupForm() {
     setMessage("Creating account...");
     const email = String(fd.get("email") || "").trim();
     const password = String(fd.get("password") || "");
-    const supabase = createSupabaseBrowserClient();
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectTo
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: redirectTo }
+      });
+      if (error) {
+        setMessage(error.message.includes("already registered") ? "An account with this email already exists. Please sign in instead." : error.message);
+        return;
       }
-    });
-    if (error) {
-      setMessage(error.message.includes("already registered") ? "An account with this email already exists. Please sign in instead." : error.message);
-      return;
-    }
-    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
-      setMessage("An account with this email already exists. Please sign in instead.");
-      return;
-    }
-    if (data.session) {
-      await fetch("/api/account/profile", {
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        setMessage("An account with this email already exists. Please sign in instead.");
+        return;
+      }
+      if (!data.session) {
+        setMessage("Account created. Check your email to confirm your address, then sign in.");
+        return;
+      }
+      const profile = await fetch("/api/account/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
       });
+      if (!profile.ok) {
+        const profileData = await profile.json().catch(() => null);
+        setMessage(profileData?.error || "Account created, but your client profile could not be prepared. Please sign in and try again.");
+        return;
+      }
       router.push(next);
       router.refresh();
-      return;
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Account creation failed. Please try again.");
     }
-    setMessage("Account created. Check your email to confirm your address, then sign in.");
   }
 
   return (

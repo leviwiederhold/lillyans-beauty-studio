@@ -12,7 +12,7 @@ async function upsertClient(request: Request) {
   const payload = {
     first_name: body.first_name || null,
     last_name: body.last_name || null,
-    email: String(body.email || data.user.email).toLowerCase(),
+    email: data.user.email.toLowerCase(),
     phone: body.phone || null,
     address: body.address || null,
     medications: body.medications || null,

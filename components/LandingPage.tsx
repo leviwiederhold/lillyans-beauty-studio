@@ -51,7 +51,11 @@ export function LandingPage() {
       <FinalCta />
       <ContactForm />
       <Footer />
-      <a href={PHONE_SMS} className="sticky-call sticky-text" aria-label="Text Lilly">Text</a>
+      <a href={PHONE_SMS} className="sticky-call" aria-label="Text Lilly">
+        <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+          <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7A8.4 8.4 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5Z" />
+        </svg>
+      </a>
       <a href={BOOKING_URL} className="sticky-book-bar">Inquire About Your Wedding or Book Now</a>
       <IntakeModal type={modalType} onClose={() => setModalType(null)} />
     </>

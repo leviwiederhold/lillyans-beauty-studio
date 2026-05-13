@@ -4,31 +4,41 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { safeNextPath } from "@/lib/auth/redirect";
 
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/account";
-  const [message, setMessage] = useState("");
+  const next = safeNextPath(params.get("next"), "/account");
+  const [message, setMessage] = useState(params.get("message") || "");
   const [showPassword, setShowPassword] = useState(false);
 
   async function submit(fd: FormData) {
     setMessage("Signing in...");
     const email = String(fd.get("email") || "").trim();
     const password = String(fd.get("password") || "");
-    const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setMessage(error.message.includes("Email not confirmed") ? "Please confirm your email address before signing in." : error.message);
-      return;
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setMessage(error.message.includes("Email not confirmed") ? "Please confirm your email address before signing in." : error.message);
+        return;
+      }
+      const profile = await fetch("/api/account/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+      if (!profile.ok) {
+        const data = await profile.json().catch(() => null);
+        setMessage(data?.error || "Signed in, but your client profile could not be prepared. Please try again.");
+        return;
+      }
+      router.push(next);
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Sign in failed. Please try again.");
     }
-    await fetch("/api/account/profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email })
-    });
-    router.push(next);
-    router.refresh();
   }
 
   return (

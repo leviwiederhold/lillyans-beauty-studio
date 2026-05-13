@@ -57,6 +57,7 @@ export async function POST(request: Request) {
 
   const { error } = await supabase.from("intake_forms").insert({
     client_id: client.id,
+    user_id: userData.user.id,
     type,
     service_label,
     service_details,
