@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export default function ClientLoginPage() {
+function ClientLoginForm() {
   const router = useRouter();
+  const params = useSearchParams();
+  const next = params.get("next") || "/account";
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [message, setMessage] = useState("");
 
@@ -23,7 +25,7 @@ export default function ClientLoginPage() {
     }
     if (mode === "signup") setMessage("Account created. Check your email if confirmation is required.");
     else {
-      router.push("/account");
+      router.push(next);
       router.refresh();
     }
   }
@@ -41,4 +43,8 @@ export default function ClientLoginPage() {
       </form>
     </main>
   );
+}
+
+export default function ClientLoginPage() {
+  return <Suspense><ClientLoginForm /></Suspense>;
 }

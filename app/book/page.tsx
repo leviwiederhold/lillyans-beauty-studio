@@ -1,9 +1,15 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BookingFlow } from "@/components/booking/BookingFlow";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function BookPage() {
+  const auth = await createSupabaseServerClient();
+  if (!auth) redirect("/login?next=/book");
+  const { data: userData } = await auth.auth.getUser();
+  if (!userData.user) redirect("/login?next=/book");
   const supabase = createSupabaseAdminClient();
   const [services, categories] = await Promise.all([
     supabase?.from("services").select("*, service_categories(name)").eq("is_active", true).order("sort_order"),

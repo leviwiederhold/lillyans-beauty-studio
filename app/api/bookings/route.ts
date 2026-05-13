@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateSlots } from "@/lib/availability";
 import { bookingRequestSchema } from "@/lib/validation";
 import { notifyAdmin, notifyClient } from "@/lib/notifications";
 import { createSquareDepositLink, squareConfigured } from "@/lib/square";
 
 export async function POST(request: Request) {
+  const auth = await createSupabaseServerClient();
+  const { data: userData } = auth ? await auth.auth.getUser() : { data: { user: null } };
+  if (!userData.user?.email) return NextResponse.json({ error: "Sign in is required before booking." }, { status: 401 });
   const parsed = bookingRequestSchema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
   const supabase = createSupabaseAdminClient();
@@ -53,8 +56,9 @@ export async function POST(request: Request) {
     }
   }
 
-  const existingClient = await supabase.from("clients").select("id").or(`email.ilike.${data.email},phone.eq.${data.phone || ""}`).limit(1).maybeSingle();
-  const clientPayload = { first_name: data.first_name, last_name: data.last_name || null, email: data.email.toLowerCase(), phone: data.phone || null, updated_at: new Date().toISOString() };
+  const bookingEmail = userData.user.email;
+  const existingClient = await supabase.from("clients").select("id").or(`profile_id.eq.${userData.user.id},email.ilike.${bookingEmail}`).limit(1).maybeSingle();
+  const clientPayload = { first_name: data.first_name, last_name: data.last_name || null, email: bookingEmail.toLowerCase(), phone: data.phone || null, profile_id: userData.user.id, updated_at: new Date().toISOString() };
   const client = existingClient.data
     ? await supabase.from("clients").update(clientPayload).eq("id", existingClient.data.id).select("id").single()
     : await supabase.from("clients").insert(clientPayload).select("id").single();
@@ -79,7 +83,7 @@ export async function POST(request: Request) {
     client_id: client.data?.id || null,
     service_id: service.data.id,
     client_name: `${data.first_name} ${data.last_name || ""}`.trim(),
-    email: data.email,
+    email: bookingEmail,
     phone: data.phone || null,
     service_type: service.data.name,
     status: depositRequired ? "pending" : settings.data?.gift_card_auto_confirm ? "confirmed" : "pending_admin_confirmation",
@@ -129,7 +133,7 @@ export async function POST(request: Request) {
       bookingId: booking.data.id,
       serviceName: service.data.name,
       amount: depositAmount,
-      clientEmail: data.email
+      clientEmail: bookingEmail
     });
     squareCheckoutUrl = square.url;
     await supabase.from("bookings").update({
@@ -144,6 +148,6 @@ export async function POST(request: Request) {
   }
 
   await notifyAdmin("New booking request", `${booking.data.client_name} requested ${service.data.name} on ${starts.toLocaleString()}.`);
-  await notifyClient(data.email, "Your booking request was received", depositRequired && squareCheckoutUrl ? `We received your ${service.data.name} booking request. Please pay the 20% deposit to confirm: ${squareCheckoutUrl}` : `We received your ${service.data.name} booking request. Lilly will confirm it soon.`);
+  await notifyClient(bookingEmail, "Your booking request was received", depositRequired && squareCheckoutUrl ? `We received your ${service.data.name} booking request. Please pay the 20% deposit to confirm: ${squareCheckoutUrl}` : `We received your ${service.data.name} booking request. Lilly will confirm it soon.`);
   return NextResponse.json({ ok: true, booking: booking.data, square_checkout_url: squareCheckoutUrl, requires_intake: service.data.requires_intake, intake_type: service.data.intake_type });
 }

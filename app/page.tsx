@@ -23,7 +23,7 @@ export default function Home() {
               addressCountry: "US"
             },
             description:
-              "Certified wedding makeup artist and permanent makeup specialist in Fayetteville, OH. Serving brides and clients across southwest Ohio.",
+              "Certified wedding makeup artist and permanent makeup specialist serving the Greater Cincinnati Area.",
             sameAs: [
               "https://www.instagram.com/lillyans_beautystudio/",
               "https://www.facebook.com/lillyansbeautystudio"
