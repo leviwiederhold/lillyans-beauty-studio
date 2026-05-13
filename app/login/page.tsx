@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 function LoginForm() {
@@ -9,6 +10,7 @@ function LoginForm() {
   const params = useSearchParams();
   const next = params.get("next") || "/account";
   const [message, setMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   async function submit(fd: FormData) {
     setMessage("Signing in...");
@@ -30,18 +32,26 @@ function LoginForm() {
   }
 
   return (
-    <main className="admin-shell login-shell">
-      <form className="admin-card login-card" action={submit}>
+    <main className="auth-page">
+      <AuthHeader />
+      <form className="auth-card" action={submit}>
+        <p className="auth-eyebrow">Welcome Back</p>
         <h1>Client Sign In</h1>
-        <p>Sign in to book online and view your appointments.</p>
-        <label>Email<input name="email" type="email" required /></label>
-        <label>Password<input name="password" type="password" required /></label>
+        <p className="auth-copy">Sign in to book online, complete intake forms, and view your appointments.</p>
+        <p className="auth-notice">Sign in is required before booking or submitting service intake forms.</p>
+        <label>Email<input name="email" type="email" autoComplete="email" placeholder="you@example.com" required /></label>
+        <label>Password<span className="password-wrap"><input name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="Your password" required /><button type="button" onClick={() => setShowPassword((v) => !v)}>{showPassword ? "Hide" : "Show"}</button></span></label>
+        <a className="auth-link" href={`mailto:lillyansbeautystudio@gmail.com?subject=Password help`}>Forgot your password?</a>
         {message && <p className="admin-message">{message}</p>}
-        <button className="btn-primary">Sign In</button>
-        <a className="btn-outline" href={`/signup?next=${encodeURIComponent(next)}`}>Create Account</a>
+        <div className="auth-actions"><button className="btn-primary">Sign In</button><a className="btn-outline" href={`/signup?next=${encodeURIComponent(next)}`}>Create Account</a></div>
+        <p className="auth-privacy">Your client account keeps booking and intake information connected to you securely.</p>
       </form>
     </main>
   );
+}
+
+function AuthHeader() {
+  return <header className="auth-header"><Link href="/" className="nav-logo">Lillyan&apos;s Beauty Studio<span>Cincinnati, Ohio</span></Link><Link href="/" className="auth-link">Back to Site</Link></header>;
 }
 
 export default function LoginPage() {

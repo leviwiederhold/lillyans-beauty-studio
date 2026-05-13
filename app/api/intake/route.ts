@@ -1,27 +1,28 @@
 import { NextResponse } from "next/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { intakeFormSchema } from "@/lib/validation";
 import { notifyAdmin, notifyClient } from "@/lib/notifications";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const email = searchParams.get("email")?.trim();
-  const phone = searchParams.get("phone")?.trim();
+  const auth = await createSupabaseServerClient();
+  const { data: userData } = auth ? await auth.auth.getUser() : { data: { user: null } };
+  if (!userData.user?.email) return NextResponse.json({ error: "Sign in is required before viewing intake information." }, { status: 401 });
   const supabase = createSupabaseAdminClient();
   if (!supabase) return NextResponse.json({ error: "Supabase is not configured." }, { status: 500 });
-  if (!email && !phone) return NextResponse.json({ client: null });
-
-  let query = supabase.from("clients").select("*").limit(1);
-  if (email && phone) query = query.or(`email.ilike.${email},phone.eq.${phone}`);
-  else if (email) query = query.ilike("email", email);
-  else if (phone) query = query.eq("phone", phone);
-
-  const { data, error } = await query.maybeSingle();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("*")
+    .or(`profile_id.eq.${userData.user.id},email.ilike.${userData.user.email}`)
+    .limit(1)
+    .maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ client: data });
 }
 
 export async function POST(request: Request) {
+  const auth = await createSupabaseServerClient();
+  const { data: userData } = auth ? await auth.auth.getUser() : { data: { user: null } };
+  if (!userData.user?.email) return NextResponse.json({ error: "Sign in is required before submitting intake forms." }, { status: 401 });
   const body = await request.json();
   const parsed = intakeFormSchema.safeParse(body);
   if (!parsed.success) {
@@ -32,18 +33,19 @@ export async function POST(request: Request) {
   if (!supabase) return NextResponse.json({ error: "Supabase is not configured." }, { status: 500 });
 
   const { website, type, service_label, service_details, consent_accuracy, consent_updates, consent_policy, signature, signature_date, ...clientData } = parsed.data;
-  const email = clientData.email.toLowerCase();
+  const email = userData.user.email.toLowerCase();
 
   const { data: existing } = await supabase
     .from("clients")
     .select("id")
-    .or(`email.ilike.${email},phone.eq.${clientData.phone}`)
+    .or(`profile_id.eq.${userData.user.id},email.ilike.${email}`)
     .limit(1)
     .maybeSingle();
 
   const clientPayload = {
     ...clientData,
     email,
+    profile_id: userData.user.id,
     updated_at: new Date().toISOString()
   };
 

@@ -4,11 +4,20 @@ import { useEffect, useState } from "react";
 import { ADDRESS, BOOKING_URL, EMAIL, GIFT_CARD_URL, MAPS_URL, PHONE, PHONE_SMS, PHONE_TEL } from "@/lib/constants";
 import { ContactForm } from "@/components/ContactForm";
 import { IntakeModal, IntakeType } from "@/components/IntakeModal";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function LandingPage() {
   const [navOpen, setNavOpen] = useState(false);
   const [modalType, setModalType] = useState<IntakeType | null>(null);
-  const openModal = (type: IntakeType) => setModalType(type);
+  async function openModal(type: IntakeType) {
+    const supabase = createSupabaseBrowserClient();
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      window.location.assign(`/login?next=${encodeURIComponent(BOOKING_URL)}`);
+      return;
+    }
+    setModalType(type);
+  }
 
   useEffect(() => {
     const observer = new IntersectionObserver(

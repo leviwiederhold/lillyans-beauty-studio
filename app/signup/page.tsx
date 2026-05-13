@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 function SignupForm() {
@@ -9,6 +10,7 @@ function SignupForm() {
   const params = useSearchParams();
   const next = params.get("next") || "/account";
   const [message, setMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   async function submit(fd: FormData) {
     setMessage("Creating account...");
@@ -45,18 +47,25 @@ function SignupForm() {
   }
 
   return (
-    <main className="admin-shell login-shell">
-      <form className="admin-card login-card" action={submit}>
+    <main className="auth-page">
+      <AuthHeader />
+      <form className="auth-card" action={submit}>
+        <p className="auth-eyebrow">Create Your Account</p>
         <h1>Create Account</h1>
-        <p>Create an account to book online and manage your appointments.</p>
-        <label>Email<input name="email" type="email" required /></label>
-        <label>Password<input name="password" type="password" required minLength={6} /></label>
+        <p className="auth-copy">Create an account to book online and manage your appointments.</p>
+        <p className="auth-notice">Sign in is required before booking or submitting service intake forms.</p>
+        <label>Email<input name="email" type="email" autoComplete="email" placeholder="you@example.com" required /></label>
+        <label>Password<span className="password-wrap"><input name="password" type={showPassword ? "text" : "password"} autoComplete="new-password" placeholder="Create a password" required minLength={6} /><button type="button" onClick={() => setShowPassword((v) => !v)}>{showPassword ? "Hide" : "Show"}</button></span></label>
         {message && <p className="admin-message">{message}</p>}
-        <button className="btn-primary">Create Account</button>
-        <a className="btn-outline" href={`/login?next=${encodeURIComponent(next)}`}>Already Have an Account</a>
+        <div className="auth-actions"><button className="btn-primary">Create Account</button><a className="btn-outline" href={`/login?next=${encodeURIComponent(next)}`}>Already Have an Account</a></div>
+        <p className="auth-privacy">Your client account keeps booking and intake information connected to you securely.</p>
       </form>
     </main>
   );
+}
+
+function AuthHeader() {
+  return <header className="auth-header"><Link href="/" className="nav-logo">Lillyan&apos;s Beauty Studio<span>Cincinnati, Ohio</span></Link><Link href="/" className="auth-link">Back to Site</Link></header>;
 }
 
 export default function SignupPage() {

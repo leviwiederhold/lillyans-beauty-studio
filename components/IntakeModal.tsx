@@ -31,7 +31,11 @@ export function IntakeModal({ type, onClose }: { type: IntakeType | null; onClos
     const email = (form.elements.namedItem("email") as HTMLInputElement | null)?.value;
     const phone = (form.elements.namedItem("phone") as HTMLInputElement | null)?.value;
     if (!email && !phone) return;
-    const res = await fetch(`/api/intake?email=${encodeURIComponent(email || "")}&phone=${encodeURIComponent(phone || "")}`);
+    const res = await fetch("/api/intake");
+    if (res.status === 401) {
+      window.location.assign(`/login?next=${encodeURIComponent(BOOKING_URL)}`);
+      return;
+    }
     const data = await res.json();
     if (data.client) {
       setPrefill({
@@ -78,6 +82,10 @@ export function IntakeModal({ type, onClose }: { type: IntakeType | null; onClos
       body: JSON.stringify(payload)
     });
     const data = await response.json();
+    if (response.status === 401) {
+      window.location.assign(`/login?next=${encodeURIComponent(BOOKING_URL)}`);
+      return;
+    }
     if (!response.ok) {
       setStatus("error");
       setMessage(typeof data.error === "string" ? data.error : "Please check the required fields and consent boxes.");
