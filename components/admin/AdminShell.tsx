@@ -11,6 +11,7 @@ const links = [
   ["/admin/settings", "Settings"],
   ["/admin/gallery", "Gallery"],
   ["/admin/gift-codes", "Gift Codes"],
+  ["/admin/gift-card-inquiries", "Gift Card Inquiries"],
   ["/admin/logs", "Logs"]
 ];
 

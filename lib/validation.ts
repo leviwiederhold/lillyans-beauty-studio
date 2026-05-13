@@ -180,6 +180,45 @@ export const waiverCodeSchema = z.object({
   is_active: z.coerce.boolean().default(true)
 });
 
+export const giftCardOccasionSchema = z.enum([
+  "Birthday",
+  "Anniversary",
+  "Wedding",
+  "Mother's Day",
+  "Graduation",
+  "Holiday",
+  "Thank You",
+  "Self Care",
+  "Other"
+]);
+
+export const giftCardInquirySchema = z.object({
+  purchaser_name: z.string().trim().min(2, "Purchaser name is required."),
+  purchaser_email: email,
+  purchaser_phone: z.string().trim().min(7, "Purchaser phone is required."),
+  recipient_name: z.string().trim().min(2, "Recipient name is required."),
+  amount_requested: z.string().trim().min(1, "Gift card amount is required."),
+  occasion: giftCardOccasionSchema,
+  occasion_other: z.string().trim().optional(),
+  message: z.string().trim().optional(),
+  preferred_contact_method: z.string().trim().min(1, "Preferred contact method is required."),
+  website: honeypot
+}).superRefine((data, ctx) => {
+  if (data.occasion === "Other" && !data.occasion_other?.trim()) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["occasion_other"],
+      message: "Please describe the occasion."
+    });
+  }
+});
+
+export const giftCardInquiryUpdateSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(["new", "contacted", "completed", "cancelled"]),
+  internal_notes: z.string().trim().optional()
+});
+
 export const businessSettingsSchema = z.object({
   business_hours: z.string().trim().optional(),
   service_availability: z.string().trim().optional(),

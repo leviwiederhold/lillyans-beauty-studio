@@ -1,12 +1,11 @@
-import { EMAIL, PHONE_SMS } from "@/lib/constants";
+import { GiftCardInquiryForm } from "@/components/GiftCardInquiryForm";
 
 export default function GiftCardsPage() {
   return (
     <main className="policy-page">
       <h1>Gift Cards</h1>
-      <p>Gift cards are available by contacting Lillyan&apos;s Beauty Studio directly.</p>
-      <p><a className="btn-primary" href={PHONE_SMS}>Text Lilly</a></p>
-      <p><a href={`mailto:${EMAIL}`}>{EMAIL}</a></p>
+      <p>Request a gift card and Lilly will follow up personally to complete the details. Online gift card checkout is not available on this site.</p>
+      <GiftCardInquiryForm />
     </main>
   );
 }
