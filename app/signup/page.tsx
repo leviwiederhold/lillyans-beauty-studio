@@ -12,16 +12,36 @@ function SignupForm() {
 
   async function submit(fd: FormData) {
     setMessage("Creating account...");
-    const email = String(fd.get("email") || "");
+    const email = String(fd.get("email") || "").trim();
     const password = String(fd.get("password") || "");
     const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.auth.signUp({ email, password });
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectTo
+      }
+    });
     if (error) {
-      setMessage(error.message);
+      setMessage(error.message.includes("already registered") ? "An account with this email already exists. Please sign in instead." : error.message);
       return;
     }
-    setMessage("Account created. Check your email if confirmation is required, then sign in.");
-    router.push(`/login?next=${encodeURIComponent(next)}`);
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      setMessage("An account with this email already exists. Please sign in instead.");
+      return;
+    }
+    if (data.session) {
+      await fetch("/api/account/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+      router.push(next);
+      router.refresh();
+      return;
+    }
+    setMessage("Account created. Check your email to confirm your address, then sign in.");
   }
 
   return (

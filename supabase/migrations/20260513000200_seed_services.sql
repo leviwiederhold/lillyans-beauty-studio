@@ -80,7 +80,7 @@ values (
   1,
   'Editable in admin settings.',
   'Services and durations are managed in the admin dashboard.',
-  'Available for weddings throughout the Greater Cincinnati area and beyond. Travel within the United States may be available when travel expenses are covered.',
+  'Available for weddings in Cincinnati, Ohio and beyond. Travel within the United States may be available when travel expenses are covered.',
   '/book',
   '/gift-cards',
   false

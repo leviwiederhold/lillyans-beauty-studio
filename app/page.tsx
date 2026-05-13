@@ -23,7 +23,7 @@ export default function Home() {
               addressCountry: "US"
             },
             description:
-              "Certified wedding makeup artist and permanent makeup specialist serving the Greater Cincinnati Area.",
+              "Certified wedding makeup artist and permanent makeup specialist serving Cincinnati, Ohio.",
             sameAs: [
               "https://www.instagram.com/lillyans_beautystudio/",
               "https://www.facebook.com/lillyansbeautystudio"

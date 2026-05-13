@@ -13,18 +13,34 @@ function ClientLoginForm() {
 
   async function submit(fd: FormData) {
     setMessage("Working...");
-    const email = String(fd.get("email") || "");
+    const email = String(fd.get("email") || "").trim();
     const password = String(fd.get("password") || "");
     const supabase = createSupabaseBrowserClient();
     const result = mode === "login"
       ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password });
+      : await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` }
+      });
     if (result.error) {
-      setMessage(result.error.message);
+      setMessage(result.error.message.includes("Email not confirmed") ? "Please confirm your email address before signing in." : result.error.message);
       return;
     }
-    if (mode === "signup") setMessage("Account created. Check your email if confirmation is required.");
-    else {
+    if (mode === "signup" && result.data.user && Array.isArray(result.data.user.identities) && result.data.user.identities.length === 0) {
+      setMessage("An account with this email already exists. Please sign in instead.");
+      return;
+    }
+    if (mode === "signup" && !result.data.session) {
+      setMessage("Account created. Check your email to confirm your address, then sign in.");
+      return;
+    }
+    await fetch("/api/account/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    if (mode === "signup" || mode === "login") {
       router.push(next);
       router.refresh();
     }

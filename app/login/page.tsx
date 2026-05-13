@@ -12,14 +12,19 @@ function LoginForm() {
 
   async function submit(fd: FormData) {
     setMessage("Signing in...");
-    const email = String(fd.get("email") || "");
+    const email = String(fd.get("email") || "").trim();
     const password = String(fd.get("password") || "");
     const supabase = createSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setMessage(error.message);
+      setMessage(error.message.includes("Email not confirmed") ? "Please confirm your email address before signing in." : error.message);
       return;
     }
+    await fetch("/api/account/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
     router.push(next);
     router.refresh();
   }
