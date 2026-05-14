@@ -24,6 +24,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are the only Supabase values exposed to browser code. `SUPABASE_SERVICE_ROLE_KEY` must stay server-only and should never be prefixed with `NEXT_PUBLIC_`.
+
+If the public Supabase variables are missing, `/login` and `/signup` still load and show a setup message instead of crashing. Add the variables to `.env.local` locally or to the Vercel project settings, then restart or redeploy.
+
 4. Start the app:
 
 ```bash
@@ -156,6 +160,14 @@ Set these environment variables in Vercel:
 - `SQUARE_LOCATION_ID`
 - `SQUARE_WEBHOOK_SIGNATURE_KEY`
 - `SQUARE_ENVIRONMENT`
+
+Vercel setup notes:
+
+1. In Vercel, open the project and go to Settings -> Environment Variables.
+2. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from Supabase Project Settings -> API. These are required for browser auth on `/login` and `/signup`.
+3. Add `SUPABASE_SERVICE_ROLE_KEY` from the same Supabase API settings, but keep it server-side only. Do not expose it in client code and do not rename it with a `NEXT_PUBLIC_` prefix.
+4. Add the variables for Production, Preview, and Development as needed.
+5. Redeploy after changing environment variables. Existing deployments do not automatically receive new build-time public env values.
 
 Before deploying, apply migrations to the linked Supabase project:
 
