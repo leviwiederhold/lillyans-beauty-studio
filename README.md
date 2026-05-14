@@ -157,6 +157,13 @@ Set these environment variables in Vercel:
 - `SQUARE_WEBHOOK_SIGNATURE_KEY`
 - `SQUARE_ENVIRONMENT`
 
+Supabase dashboard settings required for auth:
+
+- Authentication -> URL Configuration -> Site URL must be the deployed Vercel URL or custom domain.
+- Authentication -> URL Configuration -> Redirect URLs must include `https://YOUR_DOMAIN.com/auth/callback`.
+- Redirect URLs must also include `https://*.vercel.app/auth/callback`.
+- If using preview deployments, add the preview domain or wildcard before testing signup links.
+
 Before deploying, apply migrations to the linked Supabase project:
 
 ```bash
