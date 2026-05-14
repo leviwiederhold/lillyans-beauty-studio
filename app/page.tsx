@@ -1,6 +1,17 @@
 import { LandingPage } from "@/components/LandingPage";
+import { redirect } from "next/navigation";
+import { getAuthErrorMessage } from "@/lib/auth/errors";
+import { getSafeNextPath } from "@/lib/auth/redirect";
 
-export default function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = await searchParams;
+  const errorCode = typeof params.error_code === "string" ? params.error_code : typeof params.error === "string" ? params.error : "";
+  if (errorCode) {
+    const next = getSafeNextPath(typeof params.next === "string" ? params.next : null, "/book");
+    const description = typeof params.error_description === "string" ? params.error_description : errorCode;
+    redirect(`/auth/verify-error?next=${encodeURIComponent(next)}&code=${encodeURIComponent(errorCode)}&message=${encodeURIComponent(getAuthErrorMessage({ code: errorCode, message: description }))}`);
+  }
+
   return (
     <>
       <LandingPage />

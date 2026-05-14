@@ -157,6 +157,12 @@ Set these environment variables in Vercel:
 - `SQUARE_WEBHOOK_SIGNATURE_KEY`
 - `SQUARE_ENVIRONMENT`
 
+Supabase dashboard settings required for email verification:
+
+- Authentication -> URL Configuration -> Site URL: `https://lillyansbeautystudio.vercel.app`
+- Authentication -> URL Configuration -> Redirect URL: `https://lillyansbeautystudio.vercel.app/auth/callback`
+- Authentication -> URL Configuration -> Preview redirect: `https://*.vercel.app/auth/callback`
+
 Before deploying, apply migrations to the linked Supabase project:
 
 ```bash

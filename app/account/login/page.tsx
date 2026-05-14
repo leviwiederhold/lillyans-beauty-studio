@@ -3,11 +3,12 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getAuthCallbackUrl, getSafeNextPath } from "@/lib/auth/redirect";
 
 function ClientLoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/account";
+  const next = getSafeNextPath(params.get("next"));
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [message, setMessage] = useState("");
 
@@ -21,7 +22,7 @@ function ClientLoginForm() {
       : await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` }
+        options: { emailRedirectTo: getAuthCallbackUrl(next, window.location.origin) }
       });
     if (result.error) {
       setMessage(result.error.message.includes("Email not confirmed") ? "Please confirm your email address before signing in." : result.error.message);
