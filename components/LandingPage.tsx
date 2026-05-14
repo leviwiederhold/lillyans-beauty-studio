@@ -145,5 +145,21 @@ function FinalCta() {
 }
 
 function Footer() {
-  return <footer><div className="footer-grid"><div className="footer-brand"><a href="#" className="nav-logo">Lillyan&apos;s Beauty Studio<span>Cincinnati, Ohio</span></a><p>Certified wedding makeup artist and permanent makeup specialist serving Cincinnati, Ohio.</p><div className="footer-social"><a href="https://www.instagram.com/lillyans_beautystudio/" target="_blank" className="social-link">IG</a><a href="https://www.facebook.com/lillyansbeautystudio" target="_blank" className="social-link">FB</a><a href="https://www.tiktok.com/@lillyans_beautystudio" target="_blank" className="social-link">TK</a></div></div><div className="footer-col"><h4>Priority Services</h4><ul>{["Wedding Makeup", "Permanent Makeup", "Microblading", "Powder Brows", "Lip Blush"].map((x) => <li key={x}><a href={x === "Wedding Makeup" ? "#weddings" : "#permanent-makeup"}>{x}</a></li>)}</ul></div><div className="footer-col"><h4>Studio</h4><ul><li><a href="/about">About Lilly</a></li><li><a href="/memberships">Memberships</a></li><li><a href="#gallery">Gallery</a></li><li><a href="/care">Pre + Post Care</a></li><li><a href={GIFT_CARD_URL}>Gift Cards</a></li></ul></div><div className="footer-col"><h4>Contact</h4><ul><li><a href={`tel:${PHONE_TEL}`}>{PHONE}</a></li><li><a href={`mailto:${EMAIL}`}>{EMAIL}</a></li><li><a href={MAPS_URL} target="_blank">{ADDRESS}</a></li></ul></div></div><div className="footer-bottom"><p>© 2025 Lillyan&apos;s Beauty Studio · Cincinnati, Ohio · All rights reserved.</p><p>Certified Wedding Makeup Artist · Licensed Permanent Makeup Specialist</p></div></footer>;
+  return <footer><div className="footer-grid"><div className="footer-brand"><a href="#" className="nav-logo">Lillyan&apos;s Beauty Studio<span>Cincinnati, Ohio</span></a><p>Certified wedding makeup artist and permanent makeup specialist serving Cincinnati, Ohio.</p><div className="footer-social"><SocialLink href="https://www.instagram.com/lillyans_beautystudio/" label="Instagram"><InstagramIcon /></SocialLink><SocialLink href="https://www.facebook.com/lillyansbeautystudio" label="Facebook"><FacebookIcon /></SocialLink><SocialLink href="https://www.tiktok.com/@lillyans_beautystudio" label="TikTok"><TikTokIcon /></SocialLink></div></div><div className="footer-col"><h4>Priority Services</h4><ul>{["Wedding Makeup", "Permanent Makeup", "Microblading", "Powder Brows", "Lip Blush"].map((x) => <li key={x}><a href={x === "Wedding Makeup" ? "#weddings" : "#permanent-makeup"}>{x}</a></li>)}</ul></div><div className="footer-col"><h4>Studio</h4><ul><li><a href="/about">About Lilly</a></li><li><a href="/memberships">Memberships</a></li><li><a href="#gallery">Gallery</a></li><li><a href="/care">Pre + Post Care</a></li><li><a href={GIFT_CARD_URL}>Gift Cards</a></li></ul></div><div className="footer-col"><h4>Contact</h4><ul><li><a href={`tel:${PHONE_TEL}`}>{PHONE}</a></li><li><a href={`mailto:${EMAIL}`}>{EMAIL}</a></li><li><a href={MAPS_URL} target="_blank">{ADDRESS}</a></li></ul></div></div><div className="footer-bottom"><p>© 2025 Lillyan&apos;s Beauty Studio · Cincinnati, Ohio · All rights reserved.</p><p>Certified Wedding Makeup Artist · Licensed Permanent Makeup Specialist</p></div></footer>;
+}
+
+function SocialLink({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
+  return <a href={href} target="_blank" rel="noreferrer" className="social-link" aria-label={label}>{children}</a>;
+}
+
+function InstagramIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="5" width="14" height="14" rx="4" /><circle cx="12" cy="12" r="3.2" /><circle cx="16.6" cy="7.4" r=".8" /></svg>;
+}
+
+function FacebookIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 8.2h2V5h-2.4C10.8 5 9 6.8 9 9.6V12H7v3.1h2V20h3.4v-4.9h2.7l.5-3.1h-3.2V9.9c0-1.1.5-1.7 1.6-1.7Z" /></svg>;
+}
+
+function TikTokIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.2 4.8c.4 2.4 1.8 3.9 4 4.2v3.1a7 7 0 0 1-4-1.3v4.6c0 3-2 5.2-5 5.2A4.8 4.8 0 0 1 4.4 16c0-3.2 2.8-5.4 6-4.8v3.2c-1.5-.5-2.8.4-2.8 1.7 0 1 .8 1.7 1.8 1.7 1.1 0 1.8-.7 1.8-2.1V4.8h3Z" /></svg>;
 }
