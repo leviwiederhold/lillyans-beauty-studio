@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { ADDRESS } from "@/lib/constants";
 import ServiceSelection from "./ServiceSelection";
+import IntakeStep from "@/components/forms/IntakeStep";
 
 type Service = {
   id: string;
@@ -82,6 +83,7 @@ export function BookingFlow({
   userFirstName = "",
   userLastName = "",
   userPhone = "",
+  userId = "",
 }: {
   services: Service[];
   intakeForms: IntakeForm[];
@@ -89,6 +91,7 @@ export function BookingFlow({
   userFirstName?: string;
   userLastName?: string;
   userPhone?: string;
+  userId?: string;
 }) {
   const today = new Date();
 
@@ -106,6 +109,8 @@ export function BookingFlow({
   const [step, setStep] = useState(0);
   const [activeCat, setActiveCat] = useState(() => categories[0]?.name ?? "");
   const [serviceId, setServiceId] = useState("");
+  // Carries the display info from ServiceSelection (name, price, duration, category)
+  const [selectedServiceInfo, setSelectedServiceInfo] = useState<{ name: string; price: string; duration: string; category: string } | null>(null);
 
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth());
@@ -261,12 +266,19 @@ export function BookingFlow({
           {step === 0 ? (
             <ServiceSelection
               onNext={(selected) => {
-                // Match to a Supabase service by name (case-insensitive, partial)
-                const match = services.find(
-                  (s) => s.name.toLowerCase() === selected.name.toLowerCase()
-                ) ?? services.find(
-                  (s) => s.name.toLowerCase().includes(selected.name.toLowerCase().split(" ")[0])
-                );
+                // Store display info for forms
+                setSelectedServiceInfo({
+                  name: selected.name,
+                  price: selected.price,
+                  duration: selected.duration,
+                  category: selected.category,
+                });
+                // Match to a Supabase service by name (case-insensitive, then prefix fallback)
+                const match =
+                  services.find((s) => s.name.toLowerCase() === selected.name.toLowerCase()) ??
+                  services.find((s) =>
+                    s.name.toLowerCase().includes(selected.name.toLowerCase().split(" ")[0])
+                  );
                 if (match) setServiceId(match.id);
                 setStep(1);
               }}
@@ -391,7 +403,7 @@ export function BookingFlow({
                       <div style={{ marginTop: "1rem" }}>
                         <button
                           className="btn btn-pink btn-sm"
-                          onClick={() => setStep(service?.requires_intake ? 2 : 3)}
+                          onClick={() => setStep(2)}
                         >
                           Continue
                         </button>
@@ -403,52 +415,15 @@ export function BookingFlow({
             </>
           )}
 
-          {/* STEP 3 — INTAKE */}
-          {step >= 2 && service?.requires_intake && (
-            <div className="card" style={{ marginBottom: "1rem" }}>
-              <div className="card-header">
-                <span className="card-title" style={{ fontSize: "1rem" }}>Medical Intake Form</span>
-              </div>
-              <div className="card-body">
-                {intakeOnFile ? (
-                  <>
-                    <div className="intake-status complete">
-                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Intake form on file
-                    </div>
-                    <p style={{ fontSize: "0.78rem", color: "var(--grey-mid)", marginBottom: "0.8rem" }}>
-                      Has anything changed since your last visit?
-                    </p>
-                    <div style={{ display: "flex", gap: "0.6rem" }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setStep(3)}>
-                        No changes — use same form
-                      </button>
-                      <a href="/account/intake" className="btn btn-app-outline btn-sm">Update my form</a>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="intake-status pending">
-                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                      </svg>
-                      Intake form required before your appointment
-                    </div>
-                    <p style={{ fontSize: "0.78rem", color: "var(--grey-mid)", marginBottom: "0.8rem" }}>
-                      Please complete your intake form. You can still book now and submit the form from your account.
-                    </p>
-                    <div style={{ display: "flex", gap: "0.6rem" }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setStep(3)}>
-                        Continue anyway
-                      </button>
-                      <a href="/account/intake" className="btn btn-pink btn-sm">Complete Form Now</a>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+          {/* STEP 3 — INTAKE FORMS (full form sequence via IntakeStep) */}
+          {step === 2 && selectedServiceInfo && (
+            <IntakeStep
+              booking={selectedServiceInfo}
+              userId={userId}
+              bookingId={null}
+              onComplete={() => setStep(3)}
+              onBack={() => setStep(1)}
+            />
           )}
 
           {/* STEP 4 — GIFT CARD / CODE */}

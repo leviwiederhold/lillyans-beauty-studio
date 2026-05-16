@@ -20,7 +20,8 @@ const SIDEBAR = [
     label: "Clients",
     links: [
       { href: "/admin/clients", label: "Client List", icon: "users" },
-      { href: "/admin/memberships", label: "Memberships", icon: "star" }
+      { href: "/admin/memberships", label: "Memberships", icon: "star" },
+      { href: "/admin/client-forms", label: "Client Forms", icon: "clipboard" }
     ]
   },
   {
