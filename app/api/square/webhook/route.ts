@@ -20,6 +20,33 @@ export async function POST(request: Request) {
   if (!supabase) return NextResponse.json({ error: "Supabase is not configured." }, { status: 500 });
 
   if (orderId && status === "COMPLETED") {
+    const now = new Date();
+    const nextBilling = new Date(now);
+    nextBilling.setMonth(nextBilling.getMonth() + 1);
+    const membership = await supabase
+      .from("memberships")
+      .update({
+        status: "active",
+        is_active: true,
+        payment_status: "paid",
+        started_at: now.toISOString(),
+        current_period_start: now.toISOString(),
+        current_period_end: nextBilling.toISOString(),
+        next_billing_at: nextBilling.toISOString(),
+        square_payment_id: paymentId || null,
+        square_order_id: orderId
+      })
+      .eq("square_order_id", orderId)
+      .in("status", ["checkout_pending", "pending"])
+      .select("*")
+      .maybeSingle();
+
+    if (membership.data) {
+      await notifyAdmin("Square membership paid", `${membership.data.email || "A client"} joined ${membership.data.plan_name}.`);
+      await notifyClient(membership.data.email, "Your membership is active", `Your ${membership.data.plan_name} membership is active.`);
+      return NextResponse.json({ ok: true });
+    }
+
     const { data: booking } = await supabase
       .from("bookings")
       .update({
@@ -45,6 +72,7 @@ export async function POST(request: Request) {
 
   if (orderId && (status === "FAILED" || status === "CANCELED")) {
     await supabase.from("bookings").update({ deposit_status: "failed" }).eq("square_order_id", orderId);
+    await supabase.from("memberships").update({ payment_status: "failed", is_active: false }).eq("square_order_id", orderId);
   }
 
   return NextResponse.json({ ok: true });

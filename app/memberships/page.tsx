@@ -1,15 +1,48 @@
-import { EMAIL } from "@/lib/constants";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { MEMBERSHIP_PLANS, findMembershipPlan } from "@/lib/membership-plans";
+import { MembershipCheckout } from "@/components/memberships/MembershipCheckout";
 
-export default function MembershipsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function MembershipsPage({ searchParams }: { searchParams: Promise<{ plan?: string }> }) {
+  const params = await searchParams;
+  const selectedPlan = params.plan ? findMembershipPlan(params.plan) : null;
+  const auth = await createSupabaseServerClient();
+  const { data } = auth ? await auth.auth.getUser() : { data: { user: null } };
+
+  if (params.plan && !selectedPlan) redirect("/memberships");
+  if (selectedPlan && !data.user) {
+    redirect(`/login?next=${encodeURIComponent(`/memberships?plan=${selectedPlan.id}`)}`);
+  }
+
   return (
-    <main className="policy-page">
-      <h1>Find Your Perfect Fit</h1>
-      <p><strong>Glow - $60 every month.</strong> Choose 1 monthly: signature facial or brow tint &amp; lami or lash lift &amp; tint. Includes 10% off services &amp; retail, priority booking, and a free birthday add-on!</p>
-      <p><strong>Radiance - $130 every month. BEST VALUE.</strong> Choose 2 monthly: customized facial plus brow or lash lift &amp; tint every 6-8 weeks, rotated as needed. Includes 15% off services &amp; retail, priority booking, and an upgraded birthday gift!</p>
-      <p><strong>Luminary - $200 every month.</strong> Monthly premium facial + add-on, brow and lash lift &amp; tint every 6-8 weeks, rotated as needed, up to $75/month in waxing, 20% off services &amp; retail, priority booking, and a premium birthday gift!</p>
-      <p>Membership signup is handled internally by Lillyan&apos;s Beauty Studio. Ask about current membership options and availability.</p>
-      <p><a className="btn-primary" href="/book">Book a Service</a></p>
-      <p><a href={`mailto:${EMAIL}`}>{EMAIL}</a></p>
+    <main className="membership-page">
+      <section className="membership-hero">
+        <p className="section-label">Studio Memberships</p>
+        <h1>Find Your <em>Perfect Fit</em></h1>
+        <p>Join directly online and make self-care part of your monthly rhythm. Memberships activate after successful Square payment.</p>
+      </section>
+
+      <section className="membership-grid membership-page-grid">
+        {MEMBERSHIP_PLANS.map((plan) => (
+          <article className={`membership-card ${plan.tag ? "featured" : ""}`} key={plan.id}>
+            {plan.tag && <div className="membership-featured-tag">{plan.tag}</div>}
+            <div className="membership-body">
+              <div className="membership-name">{plan.name}</div>
+              <div className="membership-price"><strong>{plan.priceLabel}</strong><br />Every month</div>
+              <ul className="membership-perks">
+                {plan.perks.map((perk) => <li key={perk}><span className="perk-dot">✦</span>{perk}</li>)}
+              </ul>
+              <Link className={plan.tag ? "btn-primary full-btn" : "btn-outline full-btn"} href={`/memberships?plan=${plan.id}#checkout`}>Select</Link>
+              <p className="membership-note">Month-to-month. Cancel anytime.</p>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      {selectedPlan && data.user?.email && <MembershipCheckout plan={selectedPlan} clientEmail={data.user.email} />}
     </main>
   );
 }

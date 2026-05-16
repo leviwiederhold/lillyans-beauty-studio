@@ -1,22 +1,24 @@
 import { AdminShell } from "@/components/admin/AdminShell";
-import { DataTable, membershipColumns, StatGrid } from "@/components/admin/AdminDataViews";
+import { StatGrid } from "@/components/admin/AdminDataViews";
+import { MembershipManager } from "@/components/admin/MembershipManager";
 import { requireAdmin } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 
 export default async function MembershipsPage() {
   const { supabase } = await requireAdmin();
-  const memberships = await supabase?.from("memberships").select("*, clients(first_name,last_name,email,phone)").order("renewal_date");
+  const memberships = await supabase?.from("memberships").select("*, clients(first_name,last_name,email,phone)").neq("status", "plan").order("next_billing_at", { nullsFirst: false });
   const rows = memberships?.data || [];
 
   return (
-    <AdminShell title="Active Memberships" eyebrow="Admin / Memberships">
+    <AdminShell title="Memberships" eyebrow="Admin / Memberships">
       <StatGrid stats={[
         { label: "Active", value: rows.filter((r) => r.status === "active" || r.is_active).length },
         { label: "Past Due", value: rows.filter((r) => r.payment_status === "past_due").length },
-        { label: "Paused", value: rows.filter((r) => r.status === "paused").length }
+        { label: "Cancelled", value: rows.filter((r) => r.status === "cancelled" || r.status === "inactive").length },
+        { label: "Pending Checkout", value: rows.filter((r) => r.status === "checkout_pending").length }
       ]} />
-      <DataTable rows={rows} columns={membershipColumns} />
+      <MembershipManager rows={rows} />
     </AdminShell>
   );
 }

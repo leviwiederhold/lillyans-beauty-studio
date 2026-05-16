@@ -90,7 +90,7 @@ export const membershipColumns = [
   { key: "email", label: "Email", render: (r: Row) => r.clients?.email || r.email || "" },
   { key: "plan_name", label: "Plan" },
   { key: "status", label: "Status" },
-  { key: "start_date", label: "Start", render: (r: Row) => formatDate(r.start_date) },
-  { key: "renewal_date", label: "Renewal", render: (r: Row) => formatDate(r.renewal_date) },
+  { key: "started_at", label: "Start", render: (r: Row) => formatDate(r.started_at || r.start_date) },
+  { key: "next_billing_at", label: "Renewal", render: (r: Row) => formatDate(r.next_billing_at || r.current_period_end || r.renewal_date) },
   { key: "payment_status", label: "Payment" }
 ];

@@ -24,11 +24,26 @@ export default async function AccountPage() {
     client ? supabase?.from("memberships").select("*").eq("client_id", client.id).order("created_at", { ascending: false }) : null,
     client ? supabase?.from("gift_card_code_redemptions").select("*").eq("client_id", client.id).order("created_at", { ascending: false }) : null
   ]);
+  const activeMembership = (memberships?.data || []).find((membership) => membership.status === "active" || membership.is_active);
 
   return (
     <main className="admin-shell">
       <div className="admin-header"><div><p className="section-label">Client Account</p><h1>{client ? fullName(client) || "Your Profile" : "Your Profile"}</h1></div><Link href="/" className="btn-outline">View Site</Link></div>
       <ClientProfileForm client={client || { email: data.user.email }} />
+      {activeMembership && (
+        <section className="admin-card account-membership-card">
+          <p className="section-label">Active Membership</p>
+          <h2>{activeMembership.plan_name}</h2>
+          <p className="contact-info-text">Status: {activeMembership.status}. Payment: {activeMembership.payment_status || "current"}.</p>
+          {activeMembership.next_billing_at && <p className="contact-info-text">Renewal date: {formatDateTime(activeMembership.next_billing_at)}</p>}
+          {(activeMembership.benefits || activeMembership.perks) && (
+            <ul className="membership-perks">
+              {(Array.isArray(activeMembership.benefits) ? activeMembership.benefits : String(activeMembership.perks || "").split("\n")).filter(Boolean).map((perk: string) => <li key={perk}><span className="perk-dot">✦</span>{perk}</li>)}
+            </ul>
+          )}
+          <Link href="/memberships" className="btn-outline">Manage Membership</Link>
+        </section>
+      )}
       <DataTable title="Saved Intake Forms" rows={forms?.data || []} columns={[
         { key: "service_label", label: "Service" },
         { key: "created_at", label: "Submitted", render: (r) => formatDateTime(r.created_at) },
