@@ -205,4 +205,63 @@ textarea.field-input{resize:vertical;min-height:80px;}
 .admin-page-header{margin-bottom:1.5rem;}
 .admin-page-header h1{font-size:1.8rem;font-weight:300;margin-bottom:0.2rem;}
 
-@media(max-width:780px){.g3{grid-template-columns:1fr;}.g2{grid-template-columns:1fr;}.admin-sidebar-new{display:none;}.service-options{grid-template-columns:1fr;}.stat-grid{grid-template-columns:1fr 1fr;}}
+/* Landing nav account icon */
+.nav-account-icon{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--border);color:var(--grey-mid);transition:all 0.2s;text-decoration:none;flex-shrink:0;}
+.nav-account-icon:hover{border-color:var(--pink-dark);color:var(--pink-dark);background:var(--pink-light);}
+
+/* Policy/info pages with AppNav (sticky 60px) — no huge top padding needed */
+.policy-page-app{max-width:760px;margin:0 auto;padding:2rem 5% 4rem;}
+.policy-page-app h1{font-size:clamp(2rem,4vw,3.2rem);font-weight:300;margin-bottom:1rem;}
+.policy-page-app p{color:var(--grey-mid);margin-bottom:1rem;line-height:1.75;}
+
+/* Services page grid */
+.svc-category-tabs{display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:1.5rem;}
+.svc-tab{padding:0.45rem 1rem;font-size:0.72rem;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;border-radius:20px;cursor:pointer;border:1.5px solid var(--border);background:var(--white);color:var(--grey-mid);transition:all 0.18s;font-family:'Jost',sans-serif;}
+.svc-tab:hover{border-color:var(--pink-dark);color:var(--pink-dark);}
+.svc-tab.active{background:var(--pink-dark);border-color:var(--pink-dark);color:#fff;}
+.svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin-bottom:2rem;}
+.svc-card{background:var(--white);border:1px solid var(--border);border-radius:6px;padding:1rem;display:flex;flex-direction:column;gap:0.25rem;transition:box-shadow 0.18s,transform 0.18s;}
+.svc-card:hover{box-shadow:0 4px 16px rgba(196,96,122,0.10);transform:translateY(-1px);}
+.svc-card-name{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:400;color:var(--black);}
+.svc-card-meta{font-size:0.72rem;color:var(--grey-mid);}
+.svc-card-price{font-size:0.82rem;font-weight:500;color:var(--pink-dark);margin-top:auto;padding-top:0.4rem;}
+.svc-card-note{font-size:0.68rem;color:var(--grey-light);margin-top:0.15rem;}
+.svc-add-ons{background:var(--border-light);border-radius:6px;padding:1rem 1.2rem;margin-top:0.5rem;}
+.svc-add-on-row{display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.8rem;}
+.svc-add-on-row:last-child{border-bottom:none;}
+
+/* Sticky call — icon only, no text */
+.sticky-call{display:none;position:fixed;bottom:76px;right:18px;z-index:200;background:var(--pink-dark);color:#fff;width:52px;height:52px;border-radius:50%;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(196,96,122,.4);text-decoration:none;}
+
+/* App shell mobile fixes */
+@media(max-width:780px){
+  .g3{grid-template-columns:1fr;}
+  .g2{grid-template-columns:1fr;}
+  .admin-sidebar-new{display:none;}
+  .service-options{grid-template-columns:1fr;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .svc-grid{grid-template-columns:1fr 1fr;}
+  .app-nav-links .nav-link-app{font-size:0.65rem;padding:0.4rem 0.6rem;}
+  .app-page-wrap{padding:1rem;}
+  .card-header{flex-wrap:wrap;gap:0.5rem;}
+  .card-header .btn,.card-header .btn-pink,.card-header .btn-ghost{flex-shrink:0;}
+  .data-table{font-size:0.72rem;}
+  .data-table th,.data-table td{padding:0.5rem 0.6rem;}
+  .stepper{gap:0;}
+  .step-label-txt{font-size:0.55rem;}
+  .step-circle{width:24px;height:24px;font-size:0.62rem;}
+}
+@media(max-width:480px){
+  .svc-grid{grid-template-columns:1fr;}
+  .app-nav{padding:0 1rem;}
+  .app-nav-links .nav-link-app:not(:last-child){display:none;}
+  .avatar-wrap{display:flex;}
+  .profile-row{flex-direction:column;text-align:center;}
+  .profile-avatar{margin:0 auto;}
+  .booking-item{flex-wrap:wrap;}
+  .g2{grid-template-columns:1fr;}
+  .time-slots{grid-template-columns:1fr 1fr;}
+  .hours-row{flex-wrap:wrap;gap:0.5rem;}
+  .mem-card .mem-body{padding:1rem;}
+  .admin-main-new{padding:1rem;}
+}

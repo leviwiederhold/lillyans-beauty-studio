@@ -51,7 +51,9 @@ export function LandingPage() {
       <FinalCta />
       <ContactForm />
       <Footer />
-      <a href={PHONE_SMS} className="sticky-call sticky-text" aria-label="Text Lilly">Text</a>
+      <a href={PHONE_SMS} className="sticky-call" aria-label="Text Lilly">
+        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+      </a>
       <a href={BOOKING_URL} className="sticky-book-bar">Inquire About Your Wedding or Book Now</a>
       <IntakeModal type={modalType} onClose={() => setModalType(null)} />
     </>
@@ -71,7 +73,12 @@ function Navbar({ navOpen, setNavOpen }: { navOpen: boolean; setNavOpen: (open: 
         <li><a href={GIFT_CARD_URL}>Gift Cards</a></li>
         <li><a href={BOOKING_URL} className="nav-book">Book Now</a></li>
       </ul>
-      <button className="hamburger" onClick={() => setNavOpen(!navOpen)} aria-label="Menu"><span /><span /><span /></button>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+        <a href="/account" className="nav-account-icon" aria-label="My Account">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </a>
+        <button className="hamburger" onClick={() => setNavOpen(!navOpen)} aria-label="Menu"><span /><span /><span /></button>
+      </div>
     </nav>
   );
 }
