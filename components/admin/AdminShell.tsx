@@ -5,12 +5,16 @@ const links = [
   ["/admin", "Overview"],
   ["/admin/bookings", "Bookings"],
   ["/admin/calendar", "Calendar"],
-  ["/admin/memberships", "Memberships"],
   ["/admin/clients", "Clients"],
-  ["/admin/intake-forms", "Intake Forms"],
-  ["/admin/settings", "Settings"],
+  ["/admin/intake-forms", "Medical Forms"],
+  ["/admin/memberships", "Memberships"],
+  ["/admin/settings", "Services"],
+  ["/admin/business-hours", "Business Hours"],
+  ["/admin/blocked-times", "Blocked Times"],
+  ["/admin/gift-card-inquiries", "Gift Card Inquiries"],
+  ["/admin/gift-codes", "Gift Card Codes"],
   ["/admin/gallery", "Gallery"],
-  ["/admin/gift-codes", "Gift Codes"],
+  ["/admin/website-settings", "Website Settings"],
   ["/admin/logs", "Logs"]
 ];
 
@@ -24,11 +28,15 @@ export function AdminShell({ title, eyebrow, children }: { title: string; eyebro
         </div>
         <Link className="btn-outline" href="/">View Site</Link>
       </div>
-      <div className="admin-nav" aria-label="Admin navigation">
-        {links.map(([href, label]) => <Link key={href} href={href}>{label}</Link>)}
+      <div className="admin-layout">
+        <aside className="admin-sidebar" aria-label="Admin navigation">
+          {links.map(([href, label]) => <Link key={href} href={href}>{label}</Link>)}
+        </aside>
+        <div className="admin-content">
+          <AdminSearch />
+          {children}
+        </div>
       </div>
-      <AdminSearch />
-      {children}
     </main>
   );
 }

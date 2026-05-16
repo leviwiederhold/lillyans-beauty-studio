@@ -74,19 +74,26 @@ They also create supporting tables for gift card redemptions, deposit records, a
 
 ## Auth And Roles
 
-Supabase Auth creates a `profiles` row automatically for each new user.
+Supabase Auth creates a `profiles` row automatically for each new user. New signups always default to `profiles.role = 'client'` and `profiles.is_admin = false`.
 
-Admin access is controlled by either:
+Admin access uses the same Supabase Auth login and is controlled server-side by all of:
 
 - `profiles.role = 'admin'`
 - `profiles.is_admin = true`
+- an admin email allowlist, defaulting to `lillyansbeautystudio@gmail.com`
+
+Set additional server-only admin emails with:
+
+```bash
+ADMIN_EMAILS=
+```
 
 Promote Lilly manually in Supabase SQL:
 
 ```sql
 update public.profiles
 set role = 'admin', is_admin = true
-where email = 'lillyansbeautystudio@gmail.com';
+where lower(email) = 'lillyansbeautystudio@gmail.com';
 ```
 
 Admin routes use server-side auth and `requireAdmin()`. Client routes require a signed-in Supabase user. `/book` redirects unauthenticated users to `/login?next=/book`.

@@ -5,6 +5,7 @@ import { ADDRESS, BOOKING_URL, EMAIL, GIFT_CARD_URL, MAPS_URL, PHONE, PHONE_SMS,
 import { ContactForm } from "@/components/ContactForm";
 import { IntakeModal, IntakeType } from "@/components/IntakeModal";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { HeaderAccountMenu } from "@/components/account/HeaderAccountMenu";
 
 export function LandingPage() {
   const [navOpen, setNavOpen] = useState(false);
@@ -71,6 +72,7 @@ function Navbar({ navOpen, setNavOpen }: { navOpen: boolean; setNavOpen: (open: 
         <li><a href={GIFT_CARD_URL}>Gift Cards</a></li>
         <li><a href={BOOKING_URL} className="nav-book">Book Now</a></li>
       </ul>
+      <HeaderAccountMenu />
       <button className="hamburger" onClick={() => setNavOpen(!navOpen)} aria-label="Menu"><span /><span /><span /></button>
     </nav>
   );

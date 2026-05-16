@@ -2,13 +2,18 @@ import { redirect } from "next/navigation";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 export { formatDate, formatDateTime, fullName } from "@/lib/format";
 
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "lillyansbeautystudio@gmail.com")
+  .split(",")
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
+
 export async function requireAdmin() {
   const auth = await createSupabaseServerClient();
-  if (!auth) redirect("/admin/login");
+  if (!auth) redirect("/login?next=/admin");
 
   const { data: userData } = await auth.auth.getUser();
   const user = userData.user;
-  if (!user) redirect("/admin/login");
+  if (!user) redirect("/login?next=/admin");
 
   const supabase = createSupabaseAdminClient();
   if (!supabase) return { user, supabase: null };
@@ -19,6 +24,7 @@ export async function requireAdmin() {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!profile?.is_admin && profile?.role !== "admin") redirect("/admin/login");
+  const allowlisted = Boolean(user.email && ADMIN_EMAILS.includes(user.email.toLowerCase()));
+  if (!allowlisted || profile?.role !== "admin" || profile?.is_admin !== true) redirect("/admin/access-denied");
   return { user, supabase };
 }
