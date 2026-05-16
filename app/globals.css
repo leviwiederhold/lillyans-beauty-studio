@@ -233,6 +233,26 @@ textarea.field-input{resize:vertical;min-height:80px;}
 .svc-add-on-row{display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.8rem;}
 .svc-add-on-row:last-child{border-bottom:none;}
 
+/* ── Booking flow Step 1 — category + service picker ── */
+.bk-cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;}
+.bk-cat-card{background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:1rem 1.1rem 0.9rem;text-align:left;cursor:pointer;transition:border-color 0.18s,background 0.18s;display:flex;flex-direction:column;gap:0.3rem;}
+.bk-cat-card:hover{border-color:var(--pink-mid);}
+.bk-cat-card.active{background:var(--pink-light);border-color:var(--pink-dark);}
+.bk-cat-name{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:400;color:var(--black);margin-top:0.4rem;}
+.bk-cat-count{font-size:0.72rem;color:var(--grey-mid);}
+.bk-svc-list{display:flex;flex-direction:column;gap:0;}
+.bk-svc-row{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 0.9rem;border:1px solid var(--border);border-radius:8px;margin-bottom:0.45rem;cursor:pointer;background:var(--white);transition:border-color 0.15s,background 0.15s;}
+.bk-svc-row:hover{border-color:var(--pink-mid);}
+.bk-svc-row.selected{border-color:var(--pink-dark);background:var(--pink-light);}
+.bk-svc-info{display:flex;flex-direction:column;gap:0.15rem;}
+.bk-svc-name{font-size:0.9rem;font-weight:400;color:var(--black);}
+.bk-svc-dur{font-size:0.72rem;color:var(--grey-mid);}
+.bk-svc-right{display:flex;align-items:center;gap:0.6rem;flex-shrink:0;}
+.bk-svc-price{font-size:0.88rem;font-weight:500;color:var(--pink-dark);}
+.bk-svc-radio{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--border);background:var(--white);display:flex;align-items:center;justify-content:center;transition:border-color 0.15s,background 0.15s;flex-shrink:0;}
+.bk-svc-radio.selected{border-color:var(--pink-dark);background:var(--pink-dark);}
+.bk-svc-radio-dot{width:8px;height:8px;border-radius:2px;background:#fff;}
+
 /* Sticky call — icon only, no text */
 .sticky-call{display:none;position:fixed;bottom:76px;right:18px;z-index:200;background:var(--pink-dark);color:#fff;width:52px;height:52px;border-radius:50%;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(196,96,122,.4);text-decoration:none;}
 
@@ -255,6 +275,7 @@ textarea.field-input{resize:vertical;min-height:80px;}
   .step-col{width:100%;}
   .step-label-txt{font-size:0.52rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52px;}
   .step-circle{width:24px;height:24px;font-size:0.62rem;}
+  .bk-cat-grid{grid-template-columns:1fr 1fr;}
 }
 @media(max-width:480px){
   .svc-grid{grid-template-columns:1fr;}
@@ -266,6 +287,7 @@ textarea.field-input{resize:vertical;min-height:80px;}
   .booking-item{flex-wrap:wrap;}
   .g2{grid-template-columns:1fr;}
   .time-slots{grid-template-columns:1fr 1fr;}
+  .bk-cat-grid{grid-template-columns:1fr;}
   .hours-row{flex-wrap:wrap;gap:0.5rem;}
   .mem-card .mem-body{padding:1rem;}
   .admin-main-new{padding:1rem;}

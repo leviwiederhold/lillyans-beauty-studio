@@ -17,8 +17,26 @@ type Service = {
 };
 
 type IntakeForm = { id: string; type?: string; service_label?: string; created_at: string };
+type Category = { name: string; services: Service[] };
 
 const STEPS = ["Service", "Date & Time", "Intake", "Code", "Confirm"];
+
+// Simple category icon SVG
+function CatIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="3" width="22" height="22" rx="5"
+        fill={active ? "var(--pink-dark)" : "var(--pink-light)"}
+        stroke={active ? "var(--pink-dark)" : "var(--pink-mid)"}
+        strokeWidth="1.5"
+      />
+      <rect x="8" y="8" width="12" height="12" rx="2.5"
+        fill={active ? "#fff" : "var(--pink-mid)"}
+        opacity={active ? 0.7 : 1}
+      />
+    </svg>
+  );
+}
 
 function Stepper({ step }: { step: number }) {
   return (
@@ -56,10 +74,38 @@ function getMonthDays(year: number, month: number) {
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-export function BookingFlow({ services, intakeForms, userEmail = "", userFirstName = "", userLastName = "", userPhone = "" }: { services: Service[]; intakeForms: IntakeForm[]; userEmail?: string; userFirstName?: string; userLastName?: string; userPhone?: string }) {
+export function BookingFlow({
+  services,
+  intakeForms,
+  userEmail = "",
+  userFirstName = "",
+  userLastName = "",
+  userPhone = "",
+}: {
+  services: Service[];
+  intakeForms: IntakeForm[];
+  userEmail?: string;
+  userFirstName?: string;
+  userLastName?: string;
+  userPhone?: string;
+}) {
   const today = new Date();
+
+  // Group services by category
+  const categories = useMemo<Category[]>(() => {
+    const map = new Map<string, Category>();
+    for (const s of services) {
+      const catName = s.service_categories?.name ?? "Other";
+      if (!map.has(catName)) map.set(catName, { name: catName, services: [] });
+      map.get(catName)!.services.push(s);
+    }
+    return Array.from(map.values());
+  }, [services]);
+
   const [step, setStep] = useState(0);
-  const [serviceId, setServiceId] = useState(services[0]?.id || "");
+  const [activeCat, setActiveCat] = useState(() => categories[0]?.name ?? "");
+  const [serviceId, setServiceId] = useState("");
+
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState("");
@@ -77,9 +123,18 @@ export function BookingFlow({ services, intakeForms, userEmail = "", userFirstNa
   const depositCents = service?.deposit_amount_cents ?? (service?.service_total ? Math.round(service.service_total * 0.2) : 0);
   const remainingCents = service?.service_total ? service.service_total - depositCents : 0;
 
+  const catServices = useMemo(
+    () => categories.find((c) => c.name === activeCat)?.services ?? [],
+    [categories, activeCat]
+  );
+
   const intakeOnFile = useMemo(() => {
     if (!service?.requires_intake) return true;
-    return intakeForms.some((f) => f.type === service.intake_type || f.service_label?.toLowerCase().includes(service.name.toLowerCase().split(" ")[0]));
+    return intakeForms.some(
+      (f) =>
+        f.type === service.intake_type ||
+        f.service_label?.toLowerCase().includes(service.name.toLowerCase().split(" ")[0])
+    );
   }, [service, intakeForms]);
 
   async function loadSlots(dateStr: string, sid = serviceId) {
@@ -128,21 +183,29 @@ export function BookingFlow({ services, intakeForms, userEmail = "", userFirstNa
       last_name: userLastName || undefined,
       email: userEmail,
       phone: userPhone || undefined,
-      gift_card_code: codeStatus === "valid" ? code.trim() : undefined
+      gift_card_code: codeStatus === "valid" ? code.trim() : undefined,
     };
     try {
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
-        const errMsg = typeof data.error === "string" ? data.error : data.error ? JSON.stringify(data.error) : "Could not create booking.";
+        const errMsg =
+          typeof data.error === "string"
+            ? data.error
+            : data.error
+            ? JSON.stringify(data.error)
+            : "Could not create booking.";
         setSubmitMsg(errMsg);
         return;
       }
-      if (data.square_checkout_url) { window.location.assign(data.square_checkout_url); return; }
+      if (data.square_checkout_url) {
+        window.location.assign(data.square_checkout_url);
+        return;
+      }
       setDone(true);
     } catch {
       setSubmitMsg("An error occurred. Please try again.");
@@ -153,7 +216,9 @@ export function BookingFlow({ services, intakeForms, userEmail = "", userFirstNa
     return (
       <div className="card" style={{ marginTop: "1.5rem" }}>
         <div className="card-body">
-          <p style={{ color: "var(--grey-mid)" }}>No services available for online booking yet. Please contact the studio.</p>
+          <p style={{ color: "var(--grey-mid)" }}>
+            No services available for online booking yet. Please contact the studio.
+          </p>
         </div>
       </div>
     );
@@ -167,10 +232,14 @@ export function BookingFlow({ services, intakeForms, userEmail = "", userFirstNa
         </div>
         <div className="card-body">
           <div className="intake-status complete" style={{ marginBottom: "1rem" }}>
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             Your booking has been submitted.
           </div>
-          <p style={{ fontSize: "0.85rem", color: "var(--grey-mid)", marginBottom: "1rem" }}>Lilly will confirm your appointment shortly. You&apos;ll receive a notification once confirmed.</p>
+          <p style={{ fontSize: "0.85rem", color: "var(--grey-mid)", marginBottom: "1rem" }}>
+            Lilly will confirm your appointment shortly. You&apos;ll receive a notification once confirmed.
+          </p>
           <a href="/account/bookings" className="btn btn-pink btn-sm">View My Bookings</a>
         </div>
       </div>
@@ -183,66 +252,161 @@ export function BookingFlow({ services, intakeForms, userEmail = "", userFirstNa
     <div style={{ maxWidth: 820, margin: "0 auto" }}>
       <Stepper step={step} />
       <div className="g2" style={{ gap: "1.5rem", alignItems: "start" }}>
-        {/* LEFT COLUMN */}
+
+        {/* ── LEFT COLUMN ── */}
         <div>
-          {/* STEP 1 — SERVICE */}
+
+          {/* STEP 1 — CATEGORY + SERVICE PICKER */}
           {step === 0 ? (
             <div className="card" style={{ marginBottom: "1rem" }}>
-              <div className="card-header">
-                <span className="card-title" style={{ fontSize: "1rem" }}>Choose a Service</span>
-              </div>
-              <div className="card-body">
-                <div className="service-options">
-                  {services.map((s) => (
-                    <div
-                      key={s.id}
-                      className={`service-option${serviceId === s.id ? " selected" : ""}`}
-                      onClick={() => setServiceId(s.id)}
-                    >
-                      <div className="service-option-name">{s.name}</div>
-                      <div className="service-option-price">
-                        {s.service_total ? `$${(s.service_total / 100).toFixed(0)}` : "Contact for pricing"}
-                      </div>
-                      {s.service_categories?.name && <div className="service-option-note">{s.service_categories.name}</div>}
-                      {s.requires_intake && <div className="intake-flag">✦ Intake required</div>}
-                    </div>
-                  ))}
+              <div className="card-body" style={{ paddingTop: "1.4rem" }}>
+                <p className="sec-label" style={{ marginBottom: "0.3rem" }}>Step 1 of 5</p>
+                <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.9rem", fontWeight: 300, lineHeight: 1.2, marginBottom: "0.35rem" }}>
+                  What are you coming in <em>for?</em>
+                </h2>
+                <p style={{ fontSize: "0.8rem", color: "var(--grey-mid)", marginBottom: "1.4rem" }}>
+                  Choose a category to see available services
+                </p>
+
+                {/* Category grid */}
+                <div className="bk-cat-grid">
+                  {categories.map((cat) => {
+                    const isActive = activeCat === cat.name;
+                    return (
+                      <button
+                        key={cat.name}
+                        className={`bk-cat-card${isActive ? " active" : ""}`}
+                        onClick={() => setActiveCat(cat.name)}
+                      >
+                        <CatIcon active={isActive} />
+                        <div className="bk-cat-name">{cat.name}</div>
+                        <div className="bk-cat-count">
+                          {cat.services.length} service{cat.services.length !== 1 ? "s" : ""}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-                <button className="btn btn-pink" onClick={() => setStep(1)}>Continue — {service?.name}</button>
+
+                {/* Service list for active category */}
+                {catServices.length > 0 && (
+                  <div style={{ marginTop: "1.5rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.6rem" }}>
+                      <span style={{ fontSize: "0.65rem", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--pink-dark)", fontWeight: 500 }}>
+                        {activeCat}
+                      </span>
+                      <span style={{ fontSize: "0.72rem", color: "var(--grey-mid)" }}>
+                        {catServices.length} service{catServices.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <div className="bk-svc-list">
+                      {catServices.map((s) => {
+                        const isSelected = serviceId === s.id;
+                        return (
+                          <div
+                            key={s.id}
+                            className={`bk-svc-row${isSelected ? " selected" : ""}`}
+                            onClick={() => setServiceId(s.id)}
+                          >
+                            <div className="bk-svc-info">
+                              <div className="bk-svc-name">{s.name}</div>
+                              <div className="bk-svc-dur">{s.duration_minutes} min</div>
+                            </div>
+                            <div className="bk-svc-right">
+                              <div className="bk-svc-price">
+                                {s.service_total
+                                  ? `$${(s.service_total / 100).toFixed(0)}`
+                                  : "Contact for pricing"}
+                              </div>
+                              <div className={`bk-svc-radio${isSelected ? " selected" : ""}`}>
+                                {isSelected && (
+                                  <div className="bk-svc-radio-dot" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {serviceId && (
+                  <button
+                    className="btn btn-pink"
+                    style={{ marginTop: "1.2rem", width: "100%" }}
+                    onClick={() => setStep(1)}
+                  >
+                    Continue — {service?.name}
+                  </button>
+                )}
               </div>
             </div>
           ) : (
+            /* Service selected — collapsed summary card */
             <div className="card" style={{ marginBottom: "1rem" }}>
               <div className="card-header" style={{ background: "var(--border-light)" }}>
                 <span className="card-title" style={{ fontSize: "1rem" }}>Service Selected</span>
                 <span className="badge badge-pink">✓ Done</span>
               </div>
-              <div className="card-body" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div
+                className="card-body"
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
+              >
                 <div>
                   <div style={{ fontWeight: 500, fontSize: "0.9rem", marginBottom: 2 }}>{service?.name}</div>
-                  <div style={{ fontSize: "0.75rem", color: "var(--grey-mid)" }}>{service?.duration_minutes} min</div>
-                  {service?.requires_intake && <div className="intake-flag">✦ Intake form required</div>}
+                  <div style={{ fontSize: "0.75rem", color: "var(--grey-mid)" }}>
+                    {service?.duration_minutes} min
+                    {service?.service_categories?.name && ` · ${service.service_categories.name}`}
+                  </div>
+                  {service?.requires_intake && (
+                    <div className="intake-flag">✦ Intake form required</div>
+                  )}
                 </div>
-                <button className="btn btn-ghost btn-sm" onClick={() => setStep(0)}>Change</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => { setStep(0); setSelectedDate(""); setSelectedSlot(""); }}>
+                  Change
+                </button>
               </div>
             </div>
           )}
 
-          {/* STEP 2 — DATE */}
+          {/* STEP 2 — DATE & TIME */}
           {step >= 1 && (
             <>
               <div className="card" style={{ marginBottom: "1rem" }}>
                 <div className="card-header">
                   <span className="card-title" style={{ fontSize: "1rem" }}>Choose Date</span>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8rem", color: "var(--grey-mid)" }}>
-                    <button className="btn btn-ghost btn-sm" onClick={() => { const d = new Date(calYear, calMonth - 1); setCalYear(d.getFullYear()); setCalMonth(d.getMonth()); }}>‹ Prev</button>
-                    <strong style={{ color: "var(--black)", whiteSpace: "nowrap" }}>{MONTH_NAMES[calMonth]} {calYear}</strong>
-                    <button className="btn btn-ghost btn-sm" onClick={() => { const d = new Date(calYear, calMonth + 1); setCalYear(d.getFullYear()); setCalMonth(d.getMonth()); }}>Next ›</button>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => {
+                        const d = new Date(calYear, calMonth - 1);
+                        setCalYear(d.getFullYear());
+                        setCalMonth(d.getMonth());
+                      }}
+                    >
+                      ‹ Prev
+                    </button>
+                    <strong style={{ color: "var(--black)", whiteSpace: "nowrap" }}>
+                      {MONTH_NAMES[calMonth]} {calYear}
+                    </strong>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => {
+                        const d = new Date(calYear, calMonth + 1);
+                        setCalYear(d.getFullYear());
+                        setCalMonth(d.getMonth());
+                      }}
+                    >
+                      Next ›
+                    </button>
                   </div>
                 </div>
                 <div className="card-body">
                   <div className="cal-grid">
-                    {["Su","Mo","Tu","We","Th","Fr","Sa"].map((d) => <div key={d} className="cal-header-cell">{d}</div>)}
+                    {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+                      <div key={d} className="cal-header-cell">{d}</div>
+                    ))}
                     {Array.from({ length: firstDay }).map((_, i) => <div key={`empty-${i}`} />)}
                     {Array.from({ length: daysInMonth }).map((_, i) => {
                       const day = i + 1;
@@ -254,7 +418,12 @@ export function BookingFlow({ services, intakeForms, userEmail = "", userFirstNa
                         <div
                           key={day}
                           className={`cal-day${isPast ? " disabled" : ""}${isSelected ? " selected" : ""}${isToday && !isSelected ? " today-mark" : ""}`}
-                          onClick={() => { if (!isPast) { loadSlots(dateStr); if (step === 1) setStep(2); } }}
+                          onClick={() => {
+                            if (!isPast) {
+                              loadSlots(dateStr);
+                              if (step === 1) setStep(2);
+                            }
+                          }}
                         >
                           {day}
                         </div>
@@ -267,18 +436,22 @@ export function BookingFlow({ services, intakeForms, userEmail = "", userFirstNa
               {selectedDate && (
                 <div className="card" style={{ marginBottom: "1rem" }}>
                   <div className="card-header">
-                    <span className="card-title" style={{ fontSize: "1rem" }}>Available Times — {formatDate(new Date(`${selectedDate}T12:00:00`))}</span>
+                    <span className="card-title" style={{ fontSize: "1rem" }}>
+                      Available Times — {formatDate(new Date(`${selectedDate}T12:00:00`))}
+                    </span>
                   </div>
                   <div className="card-body">
                     {slotsLoading && <p style={{ fontSize: "0.82rem", color: "var(--grey-mid)" }}>Loading…</p>}
-                    {!slotsLoading && slotsMsg && <p style={{ fontSize: "0.82rem", color: "var(--grey-mid)" }}>{slotsMsg}</p>}
+                    {!slotsLoading && slotsMsg && (
+                      <p style={{ fontSize: "0.82rem", color: "var(--grey-mid)" }}>{slotsMsg}</p>
+                    )}
                     {!slotsLoading && slots.length > 0 && (
                       <div className="time-slots">
                         {slots.map((slot) => (
                           <div
                             key={slot}
                             className={`time-slot${selectedSlot === slot ? " selected" : ""}`}
-                            onClick={() => { setSelectedSlot(slot); if (step === 2 && service?.requires_intake) setStep(2); }}
+                            onClick={() => setSelectedSlot(slot)}
                           >
                             {formatTime(slot)}
                           </div>
@@ -287,7 +460,12 @@ export function BookingFlow({ services, intakeForms, userEmail = "", userFirstNa
                     )}
                     {selectedSlot && (
                       <div style={{ marginTop: "1rem" }}>
-                        <button className="btn btn-pink btn-sm" onClick={() => setStep(service?.requires_intake ? 2 : 3)}>Continue</button>
+                        <button
+                          className="btn btn-pink btn-sm"
+                          onClick={() => setStep(service?.requires_intake ? 2 : 3)}
+                        >
+                          Continue
+                        </button>
                       </div>
                     )}
                   </div>
@@ -306,24 +484,36 @@ export function BookingFlow({ services, intakeForms, userEmail = "", userFirstNa
                 {intakeOnFile ? (
                   <>
                     <div className="intake-status complete">
-                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
                       Intake form on file
                     </div>
-                    <p style={{ fontSize: "0.78rem", color: "var(--grey-mid)", marginBottom: "0.8rem" }}>Has anything changed since your last visit?</p>
+                    <p style={{ fontSize: "0.78rem", color: "var(--grey-mid)", marginBottom: "0.8rem" }}>
+                      Has anything changed since your last visit?
+                    </p>
                     <div style={{ display: "flex", gap: "0.6rem" }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setStep(3)}>No changes — use same form</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setStep(3)}>
+                        No changes — use same form
+                      </button>
                       <a href="/account/intake" className="btn btn-app-outline btn-sm">Update my form</a>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="intake-status pending">
-                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
                       Intake form required before your appointment
                     </div>
-                    <p style={{ fontSize: "0.78rem", color: "var(--grey-mid)", marginBottom: "0.8rem" }}>Please complete your intake form. You can still request the booking now and submit the form from your account.</p>
+                    <p style={{ fontSize: "0.78rem", color: "var(--grey-mid)", marginBottom: "0.8rem" }}>
+                      Please complete your intake form. You can still book now and submit the form from your account.
+                    </p>
                     <div style={{ display: "flex", gap: "0.6rem" }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setStep(3)}>Continue anyway</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setStep(3)}>
+                        Continue anyway
+                      </button>
                       <a href="/account/intake" className="btn btn-pink btn-sm">Complete Form Now</a>
                     </div>
                   </>
@@ -339,29 +529,57 @@ export function BookingFlow({ services, intakeForms, userEmail = "", userFirstNa
                 <span className="card-title" style={{ fontSize: "1rem" }}>Gift Card or Deposit Code</span>
               </div>
               <div className="card-body">
-                <p style={{ fontSize: "0.78rem", color: "var(--grey-mid)", marginBottom: "0.8rem" }}>Have a gift card or code that waives the deposit? Enter it below.</p>
+                <p style={{ fontSize: "0.78rem", color: "var(--grey-mid)", marginBottom: "0.8rem" }}>
+                  Have a gift card or code that waives the deposit? Enter it below.
+                </p>
                 <div style={{ display: "flex", gap: "0.6rem", marginBottom: "0.5rem" }}>
                   <input
                     className="field-input"
                     style={{ fontFamily: "monospace", letterSpacing: "0.1em" }}
                     placeholder="XXXX-XXXX-XXXX"
                     value={code}
-                    onChange={(e) => { setCode(e.target.value); setCodeStatus("idle"); setCodeMsg(""); }}
+                    onChange={(e) => {
+                      setCode(e.target.value);
+                      setCodeStatus("idle");
+                      setCodeMsg("");
+                    }}
                   />
-                  <button className="btn btn-pink btn-sm" style={{ whiteSpace: "nowrap" }} onClick={applyCode}>Apply Code</button>
+                  <button
+                    className="btn btn-pink btn-sm"
+                    style={{ whiteSpace: "nowrap" }}
+                    onClick={applyCode}
+                  >
+                    Apply Code
+                  </button>
                 </div>
                 {codeMsg && (
-                  <p style={{ fontSize: "0.75rem", color: codeStatus === "valid" ? "var(--success)" : codeStatus === "invalid" ? "#9b1c31" : "var(--grey-mid)" }}>
+                  <p
+                    style={{
+                      fontSize: "0.75rem",
+                      color:
+                        codeStatus === "valid"
+                          ? "var(--success)"
+                          : codeStatus === "invalid"
+                          ? "#9b1c31"
+                          : "var(--grey-mid)",
+                    }}
+                  >
                     {codeMsg}
                   </p>
                 )}
-                <button className="btn btn-ghost btn-sm" style={{ marginTop: "0.8rem" }} onClick={() => setStep(4)}>Skip — no code</button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ marginTop: "0.8rem" }}
+                  onClick={() => setStep(4)}
+                >
+                  Skip — no code
+                </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* RIGHT COLUMN — BOOKING SUMMARY */}
+        {/* ── RIGHT COLUMN — BOOKING SUMMARY ── */}
         <div>
           <div className="card" style={{ position: "sticky", top: 80 }}>
             <div className="card-header" style={{ background: "var(--black)" }}>
@@ -388,6 +606,7 @@ export function BookingFlow({ services, intakeForms, userEmail = "", userFirstNa
                 <span style={{ color: "var(--grey-mid)" }}>Location</span>
                 <span style={{ textAlign: "right", fontSize: "0.78rem" }}>{ADDRESS}</span>
               </div>
+
               {service?.service_total ? (
                 <>
                   <div style={{ height: 1, background: "var(--border)", margin: "0.8rem 0" }} />
@@ -405,21 +624,33 @@ export function BookingFlow({ services, intakeForms, userEmail = "", userFirstNa
                         <span>Remaining balance</span>
                         <span>${(remainingCents / 100).toFixed(2)}</span>
                       </div>
-                      <div className="order-row total" style={{ paddingTop: "0.8rem", borderTop: "1.5px solid var(--border)" }}>
+                      <div
+                        className="order-row total"
+                        style={{ paddingTop: "0.8rem", borderTop: "1.5px solid var(--border)" }}
+                      >
                         <span>Due today</span>
                         <span style={{ color: "var(--pink-dark)" }}>${(depositCents / 100).toFixed(2)}</span>
                       </div>
                     </>
                   ) : (
-                    <div className="order-row total" style={{ paddingTop: "0.8rem", borderTop: "1.5px solid var(--border)" }}>
+                    <div
+                      className="order-row total"
+                      style={{ paddingTop: "0.8rem", borderTop: "1.5px solid var(--border)" }}
+                    >
                       <span>Due today</span>
-                      <span style={{ color: "var(--pink-dark)" }}>$0.00 {codeStatus === "valid" ? "(code applied)" : ""}</span>
+                      <span style={{ color: "var(--pink-dark)" }}>
+                        $0.00 {codeStatus === "valid" ? "(code applied)" : ""}
+                      </span>
                     </div>
                   )}
                 </>
               ) : null}
 
-              {submitMsg && <p style={{ fontSize: "0.78rem", color: "var(--grey-mid)", marginBottom: "0.8rem" }}>{submitMsg}</p>}
+              {submitMsg && (
+                <p style={{ fontSize: "0.78rem", color: "var(--grey-mid)", marginBottom: "0.8rem" }}>
+                  {submitMsg}
+                </p>
+              )}
 
               {step >= 3 && selectedSlot ? (
                 <>
@@ -432,10 +663,14 @@ export function BookingFlow({ services, intakeForms, userEmail = "", userFirstNa
                       ? `Confirm & Pay Deposit — $${(depositCents / 100).toFixed(2)}`
                       : "Confirm Booking"}
                   </button>
-                  <p style={{ textAlign: "center", fontSize: "0.65rem", color: "var(--grey-light)" }}>Secured · Encrypted · No contracts</p>
+                  <p style={{ textAlign: "center", fontSize: "0.65rem", color: "var(--grey-light)" }}>
+                    Secured · Encrypted · No contracts
+                  </p>
                 </>
               ) : (
-                <p style={{ fontSize: "0.78rem", color: "var(--grey-light)", marginTop: "1rem" }}>Complete the steps on the left to confirm.</p>
+                <p style={{ fontSize: "0.78rem", color: "var(--grey-light)", marginTop: "1rem" }}>
+                  Complete the steps on the left to confirm.
+                </p>
               )}
             </div>
           </div>
