@@ -74,22 +74,36 @@ They also create supporting tables for gift card redemptions, deposit records, a
 
 ## Auth And Roles
 
-Supabase Auth creates a `profiles` row automatically for each new user.
+Supabase Auth creates a `profiles` row automatically for each new user. New users are always created as clients:
 
-Admin access is controlled by either:
+- `profiles.role = 'client'`
+- `profiles.is_admin = false`
+
+Users cannot set their own role through signup metadata or client UI.
+
+Admin access uses the same Supabase Auth login, but access is server-gated by both:
 
 - `profiles.role = 'admin'`
 - `profiles.is_admin = true`
+- email allowlist, defaulting to `lillyansbeautystudio@gmail.com`
 
-Promote Lilly manually in Supabase SQL:
+The migration `20260515000100_lock_admin_role_allowlist.sql` promotes Lilly's existing auth user profile when that email exists. To override or extend the server allowlist in deployment, set:
+
+```bash
+ADMIN_EMAILS=
+```
+
+Use a comma-separated list, for example `lillyansbeautystudio@gmail.com,owner@example.com`. Keep this server-side only.
+
+To promote Lilly manually in Supabase SQL:
 
 ```sql
 update public.profiles
 set role = 'admin', is_admin = true
-where email = 'lillyansbeautystudio@gmail.com';
+where lower(email) = 'lillyansbeautystudio@gmail.com';
 ```
 
-Admin routes use server-side auth and `requireAdmin()`. Client routes require a signed-in Supabase user. `/book` redirects unauthenticated users to `/login?next=/book`.
+Admin routes use server-side auth and `requireAdmin()`. If a user is not signed in, `/admin` redirects to `/login?next=/admin`. If a signed-in user is not an allowlisted admin, they see “You do not have admin access.” Client routes require a signed-in Supabase user. `/book` redirects unauthenticated users to `/login?next=/book`.
 
 ## RLS Summary
 
