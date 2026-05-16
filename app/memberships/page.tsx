@@ -1,15 +1,26 @@
-import { EMAIL } from "@/lib/constants";
+import { AppNav } from "@/components/AppNav";
+import { MembershipPlans } from "@/components/MembershipPlans";
 
 export default function MembershipsPage() {
   return (
-    <main className="policy-page">
-      <h1>Find Your Perfect Fit</h1>
-      <p><strong>Glow - $60 every month.</strong> Choose 1 monthly: signature facial or brow tint &amp; lami or lash lift &amp; tint. Includes 10% off services &amp; retail, priority booking, and a free birthday add-on!</p>
-      <p><strong>Radiance - $130 every month. BEST VALUE.</strong> Choose 2 monthly: customized facial plus brow or lash lift &amp; tint every 6-8 weeks, rotated as needed. Includes 15% off services &amp; retail, priority booking, and an upgraded birthday gift!</p>
-      <p><strong>Luminary - $200 every month.</strong> Monthly premium facial + add-on, brow and lash lift &amp; tint every 6-8 weeks, rotated as needed, up to $75/month in waxing, 20% off services &amp; retail, priority booking, and a premium birthday gift!</p>
-      <p>Membership signup is handled internally by Lillyan&apos;s Beauty Studio. Ask about current membership options and availability.</p>
-      <p><a className="btn-primary" href="/book">Book a Service</a></p>
-      <p><a href={`mailto:${EMAIL}`}>{EMAIL}</a></p>
-    </main>
+    <div style={{ minHeight: "100vh", background: "#f7f3f4" }}>
+      <AppNav />
+      <div className="app-page-wrap">
+        <div className="app-page-inner" style={{ maxWidth: 860 }}>
+          <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+            <p className="sec-label">For Regular Clients</p>
+            <h1 className="sec-title" style={{ fontSize: "2.2rem" }}>Studio Memberships</h1>
+            <p className="sec-sub" style={{ maxWidth: 420, margin: "0 auto 1.5rem" }}>
+              Make self-care a routine. Save more, book easier, and get priority access every month.
+            </p>
+          </div>
+          <MembershipPlans />
+          <div style={{ marginTop: "2rem", textAlign: "center" }}>
+            <p style={{ fontSize: "0.82rem", color: "var(--grey-mid)", marginBottom: "0.8rem" }}>Questions about memberships?</p>
+            <a href="mailto:lillyansbeautystudio@gmail.com" className="btn btn-ghost btn-sm">Contact the Studio</a>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
