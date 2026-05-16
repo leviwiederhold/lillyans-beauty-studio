@@ -5,7 +5,9 @@ import { GALLERY_CATEGORIES } from "@/lib/constants";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { GiftCodeManager } from "@/components/admin/GiftCodeManager";
 
-export function AdminForms({ settings, gallery, codes, memberships }: { settings: any; gallery: any[]; codes: any[]; memberships: any[] }) {
+const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+export function AdminForms({ settings, gallery, codes, memberships, hours = [] }: { settings: any; gallery: any[]; codes: any[]; memberships: any[]; hours?: any[] }) {
   const [message, setMessage] = useState("");
 
   async function post(url: string, data: Record<string, FormDataEntryValue>) {
@@ -47,9 +49,32 @@ export function AdminForms({ settings, gallery, codes, memberships }: { settings
     <>
       {message && <p className="admin-message">{message}</p>}
       <section className="admin-card">
-        <h2>Edit Business Hours</h2>
+        <h2>Business Hours</h2>
+        <p className="admin-help">These hours power the public booking page. Closed days will not show available appointment slots.</p>
+        <div className="admin-hours-grid">
+          {dayNames.map((day, dayIndex) => {
+            const row = hours.find((item) => Number(item.day_of_week) === dayIndex);
+            return (
+              <form key={day} action={(fd) => post("/api/admin/business-hours", { day_of_week: String(dayIndex), ...Object.fromEntries(fd.entries()) })}>
+                <h3>{day}</h3>
+                <label>Closed
+                  <select name="is_closed" defaultValue={row?.is_closed ? "true" : "false"}>
+                    <option value="false">Open</option>
+                    <option value="true">Closed</option>
+                  </select>
+                </label>
+                <label>Opens<input name="opens_at" type="time" defaultValue={row?.opens_at?.slice(0, 5) || ""} /></label>
+                <label>Closes<input name="closes_at" type="time" defaultValue={row?.closes_at?.slice(0, 5) || ""} /></label>
+                <button className="btn-outline">Save {day}</button>
+              </form>
+            );
+          })}
+        </div>
+      </section>
+      <section className="admin-card">
+        <h2>Booking Settings</h2>
         <form action={(fd) => post("/api/admin/settings", Object.fromEntries(fd.entries()))}>
-          <label>Business hours<textarea name="business_hours" defaultValue={settings?.business_hours || ""} placeholder="Add current hours here."></textarea></label>
+          <label>Business hours note<textarea name="business_hours" defaultValue={settings?.business_hours || ""} placeholder="Optional public-facing hours note."></textarea></label>
           <label>Service availability<textarea name="service_availability" defaultValue={settings?.service_availability || ""} placeholder="Which services are currently available, paused, or limited."></textarea></label>
           <label>Blocked-off dates JSON<textarea name="blocked_dates" defaultValue={JSON.stringify(settings?.blocked_dates || [], null, 2)} placeholder={'["2026-06-01"]'}></textarea></label>
           <label>Travel wedding availability<textarea name="travel_wedding_availability" defaultValue={settings?.travel_wedding_availability || ""}></textarea></label>
@@ -58,7 +83,7 @@ export function AdminForms({ settings, gallery, codes, memberships }: { settings
           <label>Auto-confirm valid gift card bookings<select name="gift_card_auto_confirm" defaultValue={settings?.gift_card_auto_confirm ? "true" : "false"}><option value="false">No</option><option value="true">Yes</option></select></label>
           <label>Booking URL<input name="booking_url" defaultValue={settings?.booking_url || ""} placeholder="https://..." /></label>
           <label>Gift Card URL<input name="gift_card_url" defaultValue={settings?.gift_card_url || ""} placeholder="https://..." /></label>
-          <button className="btn-primary">Save Hours</button>
+          <button className="btn-primary">Save Settings</button>
         </form>
       </section>
       <section className="admin-grid">

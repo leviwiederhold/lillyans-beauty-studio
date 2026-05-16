@@ -22,15 +22,20 @@ export async function POST(request: Request) {
   const date = data.starts_at.slice(0, 10);
   const dayStart = new Date(`${date}T00:00:00`).toISOString();
   const dayEnd = new Date(`${date}T23:59:59`).toISOString();
-  const [rules, bookings, blocked] = await Promise.all([
+  const [rules, hours, bookings, blocked] = await Promise.all([
     supabase.from("availability_rules").select("*").eq("is_active", true),
+    supabase.from("business_hours").select("*").eq("is_closed", false),
     supabase.from("bookings").select("starts_at,ends_at").in("status", ["pending", "confirmed"]).gte("starts_at", dayStart).lte("starts_at", dayEnd),
     supabase.from("blocked_times").select("starts_at,ends_at").lte("starts_at", dayEnd).gte("ends_at", dayStart)
   ]);
+  const hourRules = (hours.data || [])
+    .filter((h) => h.opens_at && h.closes_at)
+    .map((h) => ({ day_of_week: h.day_of_week, start_time: h.opens_at, end_time: h.closes_at }));
+  const activeRules = (rules.data?.length ? rules.data : hourRules) || [];
   const slots = generateSlots({
     date,
     durationMinutes: service.data.duration_minutes,
-    rules: rules.data || [],
+    rules: activeRules,
     bookings: (bookings.data || []).filter((b) => b.starts_at && b.ends_at) as { starts_at: string; ends_at: string }[],
     blockedTimes: blocked.data || []
   });
@@ -74,6 +79,9 @@ export async function POST(request: Request) {
   const depositAmount = depositRequired && serviceTotal > 0 ? Math.round(serviceTotal * (depositPercent / 100)) : 0;
   const remainingBalance = Math.max(serviceTotal - depositAmount, 0);
   const canCreateSquareCheckout = depositRequired && depositAmount > 0 && squareConfigured();
+  if (depositRequired && depositAmount > 0 && !canCreateSquareCheckout) {
+    return NextResponse.json({ error: "Deposit payments are not configured yet. Please contact the studio or enter a valid gift card/no-deposit code." }, { status: 503 });
+  }
   const booking = await supabase.from("bookings").insert({
     client_id: client.data?.id || null,
     service_id: service.data.id,

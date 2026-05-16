@@ -5,6 +5,7 @@ const links = [
   ["/admin", "Overview"],
   ["/admin/bookings", "Bookings"],
   ["/admin/calendar", "Calendar"],
+  ["/admin/services", "Services"],
   ["/admin/memberships", "Memberships"],
   ["/admin/clients", "Clients"],
   ["/admin/intake-forms", "Intake Forms"],
