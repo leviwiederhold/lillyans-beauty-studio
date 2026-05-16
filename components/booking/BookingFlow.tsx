@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { ADDRESS } from "@/lib/constants";
+import ServiceSelection from "./ServiceSelection";
 
 type Service = {
   id: string;
@@ -256,92 +257,20 @@ export function BookingFlow({
         {/* ── LEFT COLUMN ── */}
         <div>
 
-          {/* STEP 1 — CATEGORY + SERVICE PICKER */}
+          {/* STEP 1 — SERVICE SELECTION */}
           {step === 0 ? (
-            <div className="card" style={{ marginBottom: "1rem" }}>
-              <div className="card-body" style={{ paddingTop: "1.4rem" }}>
-                <p className="sec-label" style={{ marginBottom: "0.3rem" }}>Step 1 of 5</p>
-                <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.9rem", fontWeight: 300, lineHeight: 1.2, marginBottom: "0.35rem" }}>
-                  What are you coming in <em>for?</em>
-                </h2>
-                <p style={{ fontSize: "0.8rem", color: "var(--grey-mid)", marginBottom: "1.4rem" }}>
-                  Choose a category to see available services
-                </p>
-
-                {/* Category grid */}
-                <div className="bk-cat-grid">
-                  {categories.map((cat) => {
-                    const isActive = activeCat === cat.name;
-                    return (
-                      <button
-                        key={cat.name}
-                        className={`bk-cat-card${isActive ? " active" : ""}`}
-                        onClick={() => setActiveCat(cat.name)}
-                      >
-                        <CatIcon active={isActive} />
-                        <div className="bk-cat-name">{cat.name}</div>
-                        <div className="bk-cat-count">
-                          {cat.services.length} service{cat.services.length !== 1 ? "s" : ""}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Service list for active category */}
-                {catServices.length > 0 && (
-                  <div style={{ marginTop: "1.5rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.6rem" }}>
-                      <span style={{ fontSize: "0.65rem", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--pink-dark)", fontWeight: 500 }}>
-                        {activeCat}
-                      </span>
-                      <span style={{ fontSize: "0.72rem", color: "var(--grey-mid)" }}>
-                        {catServices.length} service{catServices.length !== 1 ? "s" : ""}
-                      </span>
-                    </div>
-                    <div className="bk-svc-list">
-                      {catServices.map((s) => {
-                        const isSelected = serviceId === s.id;
-                        return (
-                          <div
-                            key={s.id}
-                            className={`bk-svc-row${isSelected ? " selected" : ""}`}
-                            onClick={() => setServiceId(s.id)}
-                          >
-                            <div className="bk-svc-info">
-                              <div className="bk-svc-name">{s.name}</div>
-                              <div className="bk-svc-dur">{s.duration_minutes} min</div>
-                            </div>
-                            <div className="bk-svc-right">
-                              <div className="bk-svc-price">
-                                {s.service_total
-                                  ? `$${(s.service_total / 100).toFixed(0)}`
-                                  : "Contact for pricing"}
-                              </div>
-                              <div className={`bk-svc-radio${isSelected ? " selected" : ""}`}>
-                                {isSelected && (
-                                  <div className="bk-svc-radio-dot" />
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {serviceId && (
-                  <button
-                    className="btn btn-pink"
-                    style={{ marginTop: "1.2rem", width: "100%" }}
-                    onClick={() => setStep(1)}
-                  >
-                    Continue — {service?.name}
-                  </button>
-                )}
-              </div>
-            </div>
+            <ServiceSelection
+              onNext={(selected) => {
+                // Match to a Supabase service by name (case-insensitive, partial)
+                const match = services.find(
+                  (s) => s.name.toLowerCase() === selected.name.toLowerCase()
+                ) ?? services.find(
+                  (s) => s.name.toLowerCase().includes(selected.name.toLowerCase().split(" ")[0])
+                );
+                if (match) setServiceId(match.id);
+                setStep(1);
+              }}
+            />
           ) : (
             /* Service selected — collapsed summary card */
             <div className="card" style={{ marginBottom: "1rem" }}>
