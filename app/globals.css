@@ -224,7 +224,10 @@ textarea.field-input{resize:vertical;min-height:80px;}
 .svc-card:hover{box-shadow:0 4px 16px rgba(196,96,122,0.10);transform:translateY(-1px);}
 .svc-card-name{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:400;color:var(--black);}
 .svc-card-meta{font-size:0.72rem;color:var(--grey-mid);}
-.svc-card-price{font-size:0.82rem;font-weight:500;color:var(--pink-dark);margin-top:auto;padding-top:0.4rem;}
+.svc-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:0.4rem;}
+.svc-card-price{font-size:0.82rem;font-weight:500;color:var(--pink-dark);}
+.svc-card-book{font-size:0.7rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--pink-dark);text-decoration:none;border:1px solid var(--pink-dark);border-radius:4px;padding:0.2rem 0.55rem;transition:background 0.15s,color 0.15s;}
+.svc-card-book:hover{background:var(--pink-dark);color:#fff;}
 .svc-card-note{font-size:0.68rem;color:var(--grey-light);margin-top:0.15rem;}
 .svc-add-ons{background:var(--border-light);border-radius:6px;padding:1rem 1.2rem;margin-top:0.5rem;}
 .svc-add-on-row{display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.8rem;}
@@ -247,8 +250,10 @@ textarea.field-input{resize:vertical;min-height:80px;}
   .card-header .btn,.card-header .btn-pink,.card-header .btn-ghost{flex-shrink:0;}
   .data-table{font-size:0.72rem;}
   .data-table th,.data-table td{padding:0.5rem 0.6rem;}
-  .stepper{gap:0;}
-  .step-label-txt{font-size:0.55rem;}
+  .stepper{gap:0;justify-content:space-between;width:100%;}
+  .step-item{flex:1;min-width:0;}
+  .step-col{width:100%;}
+  .step-label-txt{font-size:0.52rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52px;}
   .step-circle{width:24px;height:24px;font-size:0.62rem;}
 }
 @media(max-width:480px){

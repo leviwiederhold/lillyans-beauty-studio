@@ -27,7 +27,7 @@ function Stepper({ step }: { step: number }) {
         const done = i < step;
         const current = i === step;
         return (
-          <div key={label} className="step-item" style={i === STEPS.length - 1 ? { flex: "none" } : undefined}>
+          <div key={label} className="step-item">
             <div className="step-col">
               <div className={`step-circle${done ? " done" : current ? " current" : ""}`}>{done ? "✓" : i + 1}</div>
               <div className={`step-label-txt${current ? " current" : ""}`}>{label}</div>
@@ -56,7 +56,7 @@ function getMonthDays(year: number, month: number) {
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-export function BookingFlow({ services, intakeForms }: { services: Service[]; intakeForms: IntakeForm[] }) {
+export function BookingFlow({ services, intakeForms, userEmail = "", userFirstName = "", userLastName = "", userPhone = "" }: { services: Service[]; intakeForms: IntakeForm[]; userEmail?: string; userFirstName?: string; userLastName?: string; userPhone?: string }) {
   const today = new Date();
   const [step, setStep] = useState(0);
   const [serviceId, setServiceId] = useState(services[0]?.id || "");
@@ -120,10 +120,14 @@ export function BookingFlow({ services, intakeForms }: { services: Service[]; in
   }
 
   async function confirm() {
-    setSubmitMsg("Submitting booking request…");
+    setSubmitMsg("Submitting…");
     const payload = {
       service_id: serviceId,
       starts_at: selectedSlot,
+      first_name: userFirstName || userEmail.split("@")[0],
+      last_name: userLastName || undefined,
+      email: userEmail,
+      phone: userPhone || undefined,
       gift_card_code: codeStatus === "valid" ? code.trim() : undefined
     };
     try {
@@ -133,7 +137,11 @@ export function BookingFlow({ services, intakeForms }: { services: Service[]; in
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      if (!res.ok) { setSubmitMsg(data.error || "Could not create booking."); return; }
+      if (!res.ok) {
+        const errMsg = typeof data.error === "string" ? data.error : data.error ? JSON.stringify(data.error) : "Could not create booking.";
+        setSubmitMsg(errMsg);
+        return;
+      }
       if (data.square_checkout_url) { window.location.assign(data.square_checkout_url); return; }
       setDone(true);
     } catch {
@@ -160,9 +168,9 @@ export function BookingFlow({ services, intakeForms }: { services: Service[]; in
         <div className="card-body">
           <div className="intake-status complete" style={{ marginBottom: "1rem" }}>
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Your booking request has been submitted.
+            Your booking has been submitted.
           </div>
-          <p style={{ fontSize: "0.85rem", color: "var(--grey-mid)", marginBottom: "1rem" }}>Lilly will confirm your appointment shortly. You&apos;ll receive a notification once it&apos;s confirmed.</p>
+          <p style={{ fontSize: "0.85rem", color: "var(--grey-mid)", marginBottom: "1rem" }}>Lilly will confirm your appointment shortly. You&apos;ll receive a notification once confirmed.</p>
           <a href="/account/bookings" className="btn btn-pink btn-sm">View My Bookings</a>
         </div>
       </div>
@@ -193,7 +201,7 @@ export function BookingFlow({ services, intakeForms }: { services: Service[]; in
                     >
                       <div className="service-option-name">{s.name}</div>
                       <div className="service-option-price">
-                        {s.service_total ? `$${(s.service_total / 100).toFixed(0)}` : "Inquire"}
+                        {s.service_total ? `$${(s.service_total / 100).toFixed(0)}` : "Contact for pricing"}
                       </div>
                       {s.service_categories?.name && <div className="service-option-note">{s.service_categories.name}</div>}
                       {s.requires_intake && <div className="intake-flag">✦ Intake required</div>}
@@ -422,7 +430,7 @@ export function BookingFlow({ services, intakeForms }: { services: Service[]; in
                   >
                     {service?.requires_deposit && codeStatus !== "valid" && depositCents > 0
                       ? `Confirm & Pay Deposit — $${(depositCents / 100).toFixed(2)}`
-                      : "Confirm Booking Request"}
+                      : "Confirm Booking"}
                   </button>
                   <p style={{ textAlign: "center", fontSize: "0.65rem", color: "var(--grey-light)" }}>Secured · Encrypted · No contracts</p>
                 </>

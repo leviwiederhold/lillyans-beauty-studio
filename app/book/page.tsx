@@ -18,9 +18,18 @@ export default async function BookPage() {
   ]);
 
   const client = clientRes?.data;
-  const intakeForms = client
-    ? (await supabase?.from("intake_forms").select("id,type,service_label,created_at").eq("client_id", client.id).order("created_at", { ascending: false }))?.data ?? []
-    : [];
+  const [intakeFormsRes, profileRes] = await Promise.all([
+    client
+      ? supabase?.from("intake_forms").select("id,type,service_label,created_at").eq("client_id", client.id).order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+    supabase?.from("profiles").select("full_name,phone").eq("id", userData.user.id).maybeSingle()
+  ]);
+  const intakeForms = intakeFormsRes?.data ?? [];
+  const profileName: string = profileRes?.data?.full_name ?? "";
+  const nameParts = profileName.trim().split(/\s+/);
+  const firstName = nameParts[0] ?? "";
+  const lastName = nameParts.slice(1).join(" ") ?? "";
+  const phone: string = profileRes?.data?.phone ?? "";
 
   return (
     <div style={{ minHeight: "100vh", background: "#f7f3f4" }}>
@@ -32,7 +41,14 @@ export default async function BookPage() {
             <h1 className="sec-title">Book Your Appointment</h1>
             <p className="sec-sub">Licensed esthetician &amp; certified permanent makeup artist — Fayetteville, OH</p>
           </div>
-          <BookingFlow services={servicesRes?.data || []} intakeForms={intakeForms} />
+          <BookingFlow
+            services={servicesRes?.data || []}
+            intakeForms={intakeForms}
+            userEmail={userData.user.email ?? ""}
+            userFirstName={firstName}
+            userLastName={lastName}
+            userPhone={phone}
+          />
         </div>
       </div>
     </div>

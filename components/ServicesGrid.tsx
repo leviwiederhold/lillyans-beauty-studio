@@ -93,7 +93,7 @@ const CATEGORIES: Category[] = [
     id: "formal",
     label: "Formal Makeup",
     services: [
-      { name: "Formal Makeup", price: "$70+", duration: "60 min", note: "Inquire for group / event pricing" }
+      { name: "Formal Makeup", price: "$70+", duration: "60 min", note: "Contact for group / event pricing" }
     ]
   }
 ];
@@ -123,7 +123,10 @@ export function ServicesGrid() {
                 {s.note && <span>{s.note}</span>}
               </div>
             )}
-            <div className="svc-card-price">{s.price}</div>
+            <div className="svc-card-footer">
+              <div className="svc-card-price">{s.price}</div>
+              <a href="/book" className="svc-card-book">Book</a>
+            </div>
           </div>
         ))}
       </div>
@@ -144,7 +147,7 @@ export function ServicesGrid() {
 
       <div style={{ marginTop: "2rem", display: "flex", gap: "0.8rem", flexWrap: "wrap" }}>
         <a href="/book" className="btn btn-pink">Book an Appointment</a>
-        <a href="/#contact" className="btn btn-ghost">Ask a Question</a>
+        <a href="/#contact" className="btn btn-ghost">Contact the Studio</a>
       </div>
     </>
   );
