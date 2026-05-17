@@ -12,19 +12,22 @@ export default async function BookPage() {
   if (!userData.user) redirect("/login?next=/book");
 
   const supabase = createSupabaseAdminClient();
-  const [servicesRes, clientRes] = await Promise.all([
+  const [servicesRes, clientFormsRes, profileRes] = await Promise.all([
     supabase?.from("services").select("*, service_categories(name)").eq("is_active", true).order("sort_order"),
-    supabase?.from("clients").select("id").or(`profile_id.eq.${userData.user.id},email.ilike.${userData.user.email}`).limit(1).maybeSingle()
+    supabase?.from("client_forms").select("form_type, submitted_at").eq("user_id", userData.user.id).order("submitted_at", { ascending: false }),
+    supabase?.from("profiles").select("full_name,phone").eq("id", userData.user.id).maybeSingle(),
   ]);
 
-  const client = clientRes?.data;
-  const [intakeFormsRes, profileRes] = await Promise.all([
-    client
-      ? supabase?.from("intake_forms").select("id,type,service_label,created_at").eq("client_id", client.id).order("created_at", { ascending: false })
-      : Promise.resolve({ data: [] }),
-    supabase?.from("profiles").select("full_name,phone").eq("id", userData.user.id).maybeSingle()
-  ]);
-  const intakeForms = intakeFormsRes?.data ?? [];
+  // Deduplicate by form_type — keep most recent submitted_at per type
+  const seen = new Set<string>();
+  const existingFormTypes: { form_type: string; submitted_at: string }[] = [];
+  for (const row of clientFormsRes?.data ?? []) {
+    if (!seen.has(row.form_type)) {
+      seen.add(row.form_type);
+      existingFormTypes.push(row);
+    }
+  }
+
   const profileName: string = profileRes?.data?.full_name ?? "";
   const nameParts = profileName.trim().split(/\s+/);
   const firstName = nameParts[0] ?? "";
@@ -32,18 +35,18 @@ export default async function BookPage() {
   const phone: string = profileRes?.data?.phone ?? "";
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f7f3f4" }}>
+    <div className="bk-book-page" style={{ minHeight: "100vh" }}>
       <AppNav />
       <div className="app-page-wrap">
         <div className="app-page-inner wide">
-          <div style={{ marginBottom: "1.5rem" }}>
+          <div className="bk-page-intro" style={{ marginBottom: "1.5rem" }}>
             <p className="sec-label">Step-by-step</p>
             <h1 className="sec-title">Book Your Appointment</h1>
             <p className="sec-sub">Licensed esthetician &amp; certified permanent makeup artist — Fayetteville, OH</p>
           </div>
           <BookingFlow
             services={servicesRes?.data || []}
-            intakeForms={intakeForms}
+            existingFormTypes={existingFormTypes}
             userEmail={userData.user.email ?? ""}
             userFirstName={firstName}
             userLastName={lastName}
