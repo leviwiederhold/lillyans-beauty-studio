@@ -256,12 +256,9 @@ textarea.field-input{resize:vertical;min-height:80px;}
 /* Sticky call — icon only, no text */
 .sticky-call{display:none;position:fixed;bottom:76px;right:18px;z-index:200;background:var(--pink-dark);color:#fff;width:52px;height:52px;border-radius:50%;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(196,96,122,.4);text-decoration:none;}
 
-/* ── Booking flow — slide transitions + desktop card shell ─────────────── */
+/* ── Booking flow — slide transitions ─────────────────────────────────── */
 .bk-outer{background:#f7f3f4;}
 .bk-page-intro{}
-.bk-shell{}
-.bk-shell-header{display:none;}
-.bk-shell-logo{}
 .bk-slide-wrap{}
 .bk-anim-forward{animation:bkEnterRight 0.35s cubic-bezier(0.4,0,0.2,1) both;}
 .bk-anim-backward{animation:bkEnterLeft 0.35s cubic-bezier(0.4,0,0.2,1) both;}
@@ -284,10 +281,6 @@ textarea.field-input{resize:vertical;min-height:80px;}
   .bk-book-page{background:#e9e2de;}
   .bk-page-intro{display:none;}
   .bk-outer{padding:0;}
-  .bk-shell{max-width:860px;margin:32px auto;border-radius:20px;border:1px solid #e0d5d0;background:#faf8f6;box-shadow:0 8px 48px rgba(0,0,0,0.08);}
-  .bk-shell-header{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;background:#fff;border-bottom:1px solid var(--border-light);border-radius:20px 20px 0 0;}
-  .bk-shell-logo{font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:400;color:var(--black);}
-  .bk-shell-logo em{color:var(--pink-dark);font-style:italic;}
   .bk-stepper-wrap{padding:1.25rem 40px 0;}
   .bk-step-pad{padding:32px 40px 36px;}
   .bk-footer{padding:16px 32px;border-radius:0 0 20px 20px;}

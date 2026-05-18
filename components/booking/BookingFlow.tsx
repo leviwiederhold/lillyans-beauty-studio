@@ -218,12 +218,10 @@ export function BookingFlow({
   if (services.length === 0) {
     return (
       <div className="bk-outer">
-        <div className="bk-shell">
-          <div className="bk-step-pad">
-            <p style={{ color: "var(--grey-mid)" }}>
-              No services available for online booking yet. Please contact the studio.
-            </p>
-          </div>
+        <div className="bk-step-pad">
+          <p style={{ color: "var(--grey-mid)" }}>
+            No services available for online booking yet. Please contact the studio.
+          </p>
         </div>
       </div>
     );
@@ -232,10 +230,6 @@ export function BookingFlow({
   if (done) {
     return (
       <div className="bk-outer">
-        <div className="bk-shell">
-          <div className="bk-shell-header">
-            <div className="bk-shell-logo">Lillyan&apos;s <em>Beauty Studio</em></div>
-          </div>
           <div className="bk-step-pad" style={{ maxWidth: 560, margin: "0 auto" }}>
             <div className="bk-step-eyebrow">Booking Received</div>
             <h2 className="bk-step-title">You&apos;re all set!</h2>
@@ -261,7 +255,6 @@ export function BookingFlow({
               </a>
             </div>
           </div>
-        </div>
       </div>
     );
   }
@@ -269,13 +262,6 @@ export function BookingFlow({
   // ── Main render ─────────────────────────────────────────────────────────
   return (
     <div className="bk-outer">
-      <div className="bk-shell">
-
-        {/* Desktop-only header */}
-        <div className="bk-shell-header">
-          <div className="bk-shell-logo">Lillyan&apos;s <em>Beauty Studio</em></div>
-          <a href="/" className="btn btn-ghost btn-sm" style={{ textDecoration: "none" }}>Cancel</a>
-        </div>
 
         {/* Step progress bar */}
         <div className="bk-stepper-wrap">
@@ -661,7 +647,6 @@ export function BookingFlow({
             </div>
           ) : null;
         })()}
-      </div>
     </div>
   );
 }
