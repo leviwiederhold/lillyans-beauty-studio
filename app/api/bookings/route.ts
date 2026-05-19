@@ -97,7 +97,13 @@ export async function POST(request: Request) {
     gift_card_status: giftCardStatus,
     notes: data.notes || null
   }).select("*").single();
-  if (booking.error) return NextResponse.json({ error: booking.error.message }, { status: 500 });
+  if (booking.error) {
+    // Unique constraint violation — another booking just took this slot
+    if (booking.error.code === "23505") {
+      return NextResponse.json({ error: "That time was just taken by another booking. Please choose a different time." }, { status: 409 });
+    }
+    return NextResponse.json({ error: booking.error.message }, { status: 500 });
+  }
 
   if (service.data.requires_intake) {
     await supabase.from("intake_forms").insert({

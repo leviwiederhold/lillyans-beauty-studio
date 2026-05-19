@@ -24,7 +24,7 @@ export default async function AccountPage() {
   const client = clientRes?.data;
 
   const [formsRes, bookingsRes, membershipsRes, codesRes] = await Promise.all([
-    client ? supabase?.from("intake_forms").select("*").eq("client_id", client.id).order("created_at", { ascending: false }) : null,
+    supabase?.from("client_forms").select("form_type, submitted_at").eq("user_id", data.user.id).order("submitted_at", { ascending: false }),
     client ? supabase?.from("bookings").select("*, services(name,duration_minutes)").eq("client_id", client.id).order("starts_at", { ascending: false }) : null,
     client ? supabase?.from("memberships").select("*").eq("client_id", client.id).order("created_at", { ascending: false }) : null,
     client ? supabase?.from("gift_card_code_redemptions").select("*").eq("client_id", client.id).order("created_at", { ascending: false }) : null
@@ -136,12 +136,20 @@ export default async function AccountPage() {
                     No intake forms on file
                   </div>
                 ) : (
-                  forms.slice(0, 3).map((f) => (
-                    <div key={f.id} className="intake-status complete" style={{ marginBottom: "0.5rem" }}>
-                      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                      {String(f.service_label || f.type || "Form")} — on file
-                    </div>
-                  ))
+                  forms.slice(0, 3).map((f) => {
+                    const FORM_LABELS: Record<string, string> = {
+                      pmu_intake: "PMU Intake",
+                      informed_consent: "Informed Consent",
+                      liability_waiver: "Liability Waiver",
+                      confidential_intake: "Confidential Intake",
+                    };
+                    return (
+                      <div key={f.form_type} className="intake-status complete" style={{ marginBottom: "0.5rem" }}>
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        {FORM_LABELS[f.form_type] ?? f.form_type} — on file
+                      </div>
+                    );
+                  })
                 )}
                 <Link href="/account/intake" className="btn btn-app-outline btn-sm" style={{ marginTop: "0.6rem" }}>Manage Intake Forms</Link>
               </div>

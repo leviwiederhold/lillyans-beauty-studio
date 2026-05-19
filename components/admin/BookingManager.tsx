@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { DataTable, bookingColumns } from "@/components/admin/AdminDataViews";
 
 export function BookingManager({ rows }: { rows: Record<string, any>[] }) {
+  const router = useRouter();
   const [selected, setSelected] = useState(rows[0]?.id || "");
   const [message, setMessage] = useState("");
 
@@ -16,7 +18,12 @@ export function BookingManager({ rows }: { rows: Record<string, any>[] }) {
       body: JSON.stringify(payload)
     });
     const body = await res.json();
-    setMessage(res.ok ? "Booking updated. Refresh to see the latest table." : body.error || "Update failed.");
+    if (res.ok) {
+      setMessage("Booking updated.");
+      router.refresh();
+    } else {
+      setMessage(body.error || "Update failed.");
+    }
   }
 
   async function resendPaymentLink() {

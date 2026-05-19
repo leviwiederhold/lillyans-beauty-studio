@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { ADDRESS } from "@/lib/constants";
 import ServiceSelection from "./ServiceSelection";
 import IntakeStep from "@/components/forms/IntakeStep";
@@ -154,6 +154,31 @@ export function BookingFlow({
     }
   }
 
+  // ── Real-time slot refresh: poll every 30s while on Step 1 (date/time) ──
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (step === 1 && selectedDate && serviceId) {
+      pollingRef.current = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/availability?service_id=${serviceId}&date=${selectedDate}`);
+          const data = await res.json();
+          const fresh: string[] = data.slots || [];
+          setSlots(fresh);
+          // If the selected slot was just booked by someone else, clear it
+          if (selectedSlot && !fresh.includes(selectedSlot)) {
+            setSelectedSlot("");
+            setSlotsMsg("That time is no longer available. Please select another.");
+          }
+        } catch {
+          // Silently ignore polling errors
+        }
+      }, 30000);
+    }
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [step, selectedDate, serviceId, selectedSlot]);
+
   async function applyCode() {
     if (!code.trim()) return;
     setCodeMsg("Checking code…");
@@ -199,6 +224,12 @@ export function BookingFlow({
             ? JSON.stringify(data.error)
             : "Could not create booking.";
         setSubmitMsg(errMsg);
+        // 409 = slot just taken — send back to date/time step and refresh slots
+        if (res.status === 409) {
+          setSelectedSlot("");
+          if (selectedDate && serviceId) loadSlots(selectedDate, serviceId);
+          goTo(1);
+        }
         return;
       }
       if (data.square_checkout_url) {
