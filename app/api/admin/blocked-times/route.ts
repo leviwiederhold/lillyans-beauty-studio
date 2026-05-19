@@ -19,8 +19,22 @@ export async function POST(req: NextRequest) {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return NextResponse.json({ error: "Not configured" }, { status: 500 });
   const body = await req.json();
-  const { starts_at, ends_at, reason } = body;
+  const { starts_at, ends_at, reason, force } = body;
   if (!starts_at || !ends_at) return NextResponse.json({ error: "starts_at and ends_at are required" }, { status: 400 });
+
+  // Check for conflicting bookings unless admin confirms with force=true
+  if (!force) {
+    const { data: conflicts } = await supabase
+      .from("bookings")
+      .select("id, client_name, service_type, starts_at")
+      .in("status", ["confirmed", "pending"])
+      .lt("starts_at", ends_at)
+      .gt("ends_at", starts_at);
+    if (conflicts && conflicts.length > 0) {
+      return NextResponse.json({ requiresConfirmation: true, conflicts }, { status: 200 });
+    }
+  }
+
   const { data, error } = await supabase
     .from("blocked_times")
     .insert({ starts_at, ends_at, reason: reason || null })

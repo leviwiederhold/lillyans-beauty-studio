@@ -42,5 +42,32 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true });
+  // Check if any confirmed/pending bookings fall outside the new hours
+  // We look 30 days ahead for bookings on each day that changed
+  const warnings: string[] = [];
+  const now = new Date();
+  for (const h of hours) {
+    if (h.is_closed || !h.opens_at || !h.closes_at) continue;
+    // Find bookings on this day_of_week that are outside the new window
+    const opensMinutes = h.opens_at.split(":").reduce((acc, v, i) => acc + (i === 0 ? Number(v) * 60 : Number(v)), 0);
+    const closesMinutes = h.closes_at.split(":").reduce((acc, v, i) => acc + (i === 0 ? Number(v) * 60 : Number(v)), 0);
+    // Query upcoming bookings on this day_of_week
+    const { data: upcomingBookings } = await supabase
+      .from("bookings")
+      .select("id, client_name, service_type, starts_at, ends_at")
+      .in("status", ["confirmed", "pending"])
+      .gte("starts_at", now.toISOString());
+    if (upcomingBookings) {
+      for (const b of upcomingBookings) {
+        const bStart = new Date(b.starts_at);
+        if (bStart.getDay() !== h.day_of_week) continue;
+        const bMins = bStart.getHours() * 60 + bStart.getMinutes();
+        if (bMins < opensMinutes || bMins >= closesMinutes) {
+          warnings.push(`${String(b.client_name)} — ${String(b.service_type)} at ${bStart.toLocaleString()} is outside the new hours.`);
+        }
+      }
+    }
+  }
+
+  return NextResponse.json({ ok: true, warnings });
 }

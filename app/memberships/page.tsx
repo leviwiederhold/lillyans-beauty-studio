@@ -5,10 +5,11 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 export default async function MembershipsPage() {
   const supabase = createSupabaseAdminClient();
   const { data: plans } = await supabase
-    ?.from("membership_plans")
-    .select("id, name, price_cents, price_monthly, description, perks, is_active")
+    ?.from("memberships")
+    .select("id, name, plan_name, price_cents, price_label, perks, sort_order")
+    .eq("status", "plan")
     .eq("is_active", true)
-    .order("price_monthly", { ascending: true }) ?? { data: [] };
+    .order("sort_order", { ascending: true }) ?? { data: [] };
 
   return (
     <div style={{ minHeight: "100vh", background: "#f7f3f4" }}>

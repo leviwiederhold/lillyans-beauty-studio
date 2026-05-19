@@ -71,9 +71,10 @@ export async function POST(request: Request) {
 
     if (planId && userId) {
       const { data: plan } = await supabase
-        .from("membership_plans")
-        .select("id, name, price_cents, price_monthly")
+        .from("memberships")
+        .select("id, name, plan_name, price_cents")
         .eq("id", planId)
+        .eq("status", "plan")
         .maybeSingle();
 
       const renewalDate = new Date();
@@ -86,26 +87,27 @@ export async function POST(request: Request) {
         .eq("profile_id", userId)
         .maybeSingle();
 
+      const planName = String((plan as { name?: string; plan_name?: string } | null)?.name ?? (plan as { name?: string; plan_name?: string } | null)?.plan_name ?? "Membership");
       await supabase.from("memberships").insert({
         client_id: client?.id ?? null,
-        plan_id: planId,
-        plan_name: plan?.name ?? null,
+        plan_ref_id: planId || null,
+        plan_name: planName,
         status: "active",
         renewal_date: renewalDate.toISOString().slice(0, 10),
-        square_order_id: orderId || null,
         started_at: new Date().toISOString(),
+        square_order_id: orderId || null,
       });
 
       if (client?.email) {
         await notifyClient(
           client.email,
-          `Welcome to ${String(plan?.name ?? "your membership")} — Lillyan's Beauty Studio`,
-          `Hi ${String(client.first_name ?? "there")}! Your ${String(plan?.name ?? "membership")} is now active. Your next renewal date is ${renewalDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.`
+          `Welcome to ${planName} — Lillyan's Beauty Studio`,
+          `Hi ${String(client.first_name ?? "there")}! Your ${planName} is now active. Your next renewal date is ${renewalDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.`
         );
       }
       await notifyAdmin(
         "New membership purchase",
-        `${String(client?.first_name ?? userId)} subscribed to ${String(plan?.name ?? planId)}.`
+        `${String(client?.first_name ?? userId)} subscribed to ${planName}.`
       );
     }
     return NextResponse.json({ ok: true });

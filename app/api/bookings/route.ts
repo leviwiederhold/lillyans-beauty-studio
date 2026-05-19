@@ -1,11 +1,31 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
-import { generateSlots } from "@/lib/availability";
+import { generateSlots, easternDayBounds } from "@/lib/availability";
 import { bookingRequestSchema } from "@/lib/validation";
 import { notifyAdmin, notifyClient } from "@/lib/notifications";
 import { createSquareDepositLink, squareConfigured } from "@/lib/square";
 
+// ── Simple in-memory rate limiter (per-IP, per-process) ──────────────────────
+const BOOKING_WINDOW_MS = 60_000;
+const BOOKING_MAX = 5;
+const bookingAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function bookingRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = bookingAttempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    bookingAttempts.set(ip, { count: 1, resetAt: now + BOOKING_WINDOW_MS });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > BOOKING_MAX;
+}
+
 export async function POST(request: Request) {
+  const ip = (request.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim();
+  if (bookingRateLimit(ip)) {
+    return NextResponse.json({ error: "Too many requests. Please wait a moment and try again." }, { status: 429 });
+  }
   const auth = await createSupabaseServerClient();
   const { data: userData } = auth ? await auth.auth.getUser() : { data: { user: null } };
   if (!userData.user?.email) return NextResponse.json({ error: "Sign in is required before booking." }, { status: 401 });
@@ -20,8 +40,7 @@ export async function POST(request: Request) {
 
   const starts = new Date(data.starts_at);
   const date = data.starts_at.slice(0, 10);
-  const dayStart = new Date(`${date}T00:00:00`).toISOString();
-  const dayEnd = new Date(`${date}T23:59:59`).toISOString();
+  const { dayStart, dayEnd } = easternDayBounds(date);
   const [rules, bookings, blocked] = await Promise.all([
     supabase.from("availability_rules").select("*").eq("is_active", true),
     supabase.from("bookings").select("starts_at,ends_at").in("status", ["pending", "confirmed"]).gte("starts_at", dayStart).lte("starts_at", dayEnd),
@@ -56,6 +75,34 @@ export async function POST(request: Request) {
     }
   }
 
+  // Check for active membership → waive deposit (before client upsert so we use user id)
+  if (depositRequired) {
+    const membership = await supabase
+      .from("memberships")
+      .select("id, plan_name")
+      .eq("client_id", userData.user.id) // will refine below once client is known
+      .eq("status", "active")
+      .maybeSingle();
+    // We check by profile_id on clients table after client upsert; pre-check by user id in profiles
+    if (!membership.data) {
+      // Also try looking up by profile_id → client_id
+      const clientLookup = await supabase.from("clients").select("id").eq("profile_id", userData.user.id).maybeSingle();
+      if (clientLookup.data) {
+        const membershipByClient = await supabase
+          .from("memberships")
+          .select("id, plan_name")
+          .eq("client_id", clientLookup.data.id)
+          .eq("status", "active")
+          .maybeSingle();
+        if (membershipByClient.data) {
+          depositRequired = false;
+        }
+      }
+    } else {
+      depositRequired = false;
+    }
+  }
+
   const bookingEmail = userData.user.email;
   const existingClient = await supabase.from("clients").select("id").or(`profile_id.eq.${userData.user.id},email.ilike.${bookingEmail}`).limit(1).maybeSingle();
   const clientPayload = { first_name: data.first_name, last_name: data.last_name || null, email: bookingEmail.toLowerCase(), phone: data.phone || null, profile_id: userData.user.id, updated_at: new Date().toISOString() };
@@ -86,7 +133,7 @@ export async function POST(request: Request) {
     ends_at: ends.toISOString(),
     deposit_required: depositRequired,
     deposit_status: depositRequired ? canCreateSquareCheckout ? "payment_link_pending" : "pending" : "waived",
-    waiver_reason: depositRequired ? null : "gift_card",
+    waiver_reason: depositRequired ? null : (giftCardCodeId ? "gift_card" : "membership"),
     gift_card_code_id: giftCardCodeId,
     service_total: serviceTotal,
     deposit_percent: depositPercent,
@@ -145,7 +192,14 @@ export async function POST(request: Request) {
   }
   if (code && giftCardStatus === "accepted") {
     await supabase.from("gift_card_code_redemptions").insert({ client_id: client.data?.id || null, booking_id: booking.data.id, code, status: "accepted" });
-    await supabase.from("gift_card_codes").update({ used_count: giftCardUsedCount + 1, redeemed_at: new Date().toISOString() }).eq("id", giftCardCodeId);
+    // Read current balance to decrement it
+    const { data: gcRow } = await supabase.from("gift_card_codes").select("balance_cents").eq("id", giftCardCodeId).maybeSingle();
+    const newBalance = Math.max(0, (gcRow?.balance_cents ?? 0) - depositAmount);
+    await supabase.from("gift_card_codes").update({
+      used_count: giftCardUsedCount + 1,
+      redeemed_at: new Date().toISOString(),
+      balance_cents: newBalance,
+    }).eq("id", giftCardCodeId);
   }
 
   await notifyAdmin("New booking request", `${booking.data.client_name} requested ${service.data.name} on ${starts.toLocaleString()}.`);

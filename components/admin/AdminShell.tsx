@@ -1,49 +1,63 @@
 import Link from "next/link";
 import { AdminSidebarNav } from "@/components/admin/AdminSidebarNav";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
-const SIDEBAR = [
-  {
-    label: "Overview",
-    links: [
-      { href: "/admin", label: "Dashboard", icon: "home" },
-      { href: "/admin/calendar", label: "Calendar", icon: "calendar" }
-    ]
-  },
-  {
-    label: "Bookings",
-    links: [
-      { href: "/admin/bookings", label: "All Bookings", icon: "book" },
-      { href: "/admin/intake-forms", label: "Intake Forms", icon: "clipboard" }
-    ]
-  },
-  {
-    label: "Clients",
-    links: [
-      { href: "/admin/clients", label: "Client List", icon: "users" },
-      { href: "/admin/memberships", label: "Memberships", icon: "star" },
-      { href: "/admin/client-forms", label: "Client Forms", icon: "clipboard" }
-    ]
-  },
-  {
-    label: "Store",
-    links: [
-      { href: "/admin/services", label: "Services", icon: "tag" },
-      { href: "/admin/gift-card-inquiries", label: "Gift Card Inquiries", icon: "gift" },
-      { href: "/admin/gift-card-codes", label: "Gift Card Codes", icon: "code" }
-    ]
-  },
-  {
-    label: "Studio",
-    links: [
-      { href: "/admin/business-hours", label: "Business Hours", icon: "clock" },
-      { href: "/admin/blocked-times", label: "Blocked Times", icon: "ban" },
-      { href: "/admin/gallery", label: "Gallery", icon: "image" },
-      { href: "/admin/settings", label: "Settings", icon: "settings" }
-    ]
+function buildSidebar(unreviewedForms: number) {
+  return [
+    {
+      label: "Overview",
+      links: [
+        { href: "/admin", label: "Dashboard", icon: "home", badge: 0 },
+        { href: "/admin/calendar", label: "Calendar", icon: "calendar", badge: 0 }
+      ]
+    },
+    {
+      label: "Bookings",
+      links: [
+        { href: "/admin/bookings", label: "All Bookings", icon: "book", badge: 0 },
+        { href: "/admin/intake-forms", label: "Intake Forms", icon: "clipboard", badge: 0 }
+      ]
+    },
+    {
+      label: "Clients",
+      links: [
+        { href: "/admin/clients", label: "Client List", icon: "users", badge: 0 },
+        { href: "/admin/memberships", label: "Memberships", icon: "star", badge: 0 },
+        { href: "/admin/client-forms", label: "Client Forms", icon: "clipboard", badge: unreviewedForms }
+      ]
+    },
+    {
+      label: "Store",
+      links: [
+        { href: "/admin/services", label: "Services", icon: "tag", badge: 0 },
+        { href: "/admin/gift-card-inquiries", label: "Gift Card Inquiries", icon: "gift", badge: 0 },
+        { href: "/admin/gift-card-codes", label: "Gift Card Codes", icon: "code", badge: 0 }
+      ]
+    },
+    {
+      label: "Studio",
+      links: [
+        { href: "/admin/business-hours", label: "Business Hours", icon: "clock", badge: 0 },
+        { href: "/admin/blocked-times", label: "Blocked Times", icon: "ban", badge: 0 },
+        { href: "/admin/gallery", label: "Gallery", icon: "image", badge: 0 },
+        { href: "/admin/settings", label: "Settings", icon: "settings", badge: 0 }
+      ]
+    }
+  ];
+}
+
+export async function AdminShell({ title, eyebrow, children }: { title: string; eyebrow?: string; children: React.ReactNode }) {
+  // Fetch unreviewed client forms count for sidebar badge
+  const supabase = createSupabaseAdminClient();
+  let unreviewedForms = 0;
+  if (supabase) {
+    const { count } = await supabase
+      .from("client_forms")
+      .select("id", { count: "exact", head: true })
+      .eq("reviewed", false);
+    unreviewedForms = count ?? 0;
   }
-];
-
-export function AdminShell({ title, eyebrow, children }: { title: string; eyebrow?: string; children: React.ReactNode }) {
+  const SIDEBAR = buildSidebar(unreviewedForms);
   return (
     <div style={{ minHeight: "100vh", background: "#f7f3f4" }}>
       {/* Top bar */}
@@ -62,7 +76,7 @@ export function AdminShell({ title, eyebrow, children }: { title: string; eyebro
             <div key={section.label} className="sidebar-section">
               <div className="sidebar-label">{section.label}</div>
               {section.links.map((link) => (
-                <AdminSidebarNav key={link.href} href={link.href} label={link.label} icon={link.icon} />
+                <AdminSidebarNav key={link.href} href={link.href} label={link.label} icon={link.icon} badge={link.badge} />
               ))}
             </div>
           ))}

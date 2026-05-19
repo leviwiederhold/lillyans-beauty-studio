@@ -8,6 +8,7 @@ export function BusinessHoursEditor({ initialHours }: { initialHours: DayRow[] }
   const [hours, setHours] = useState(initialHours);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const [warnings, setWarnings] = useState<string[]>([]);
 
   function toggle(idx: number) {
     setHours((prev) => prev.map((h) => h.day_of_week === idx ? { ...h, is_closed: !h.is_closed } : h));
@@ -26,7 +27,14 @@ export function BusinessHoursEditor({ initialHours }: { initialHours: DayRow[] }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hours })
       });
-      setMsg(res.ok ? "Hours saved." : "Could not save hours.");
+      const body = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMsg("Hours saved.");
+        setWarnings(body.warnings ?? []);
+      } else {
+        setMsg("Could not save hours.");
+        setWarnings([]);
+      }
     } catch {
       setMsg("Error saving hours.");
     } finally {
@@ -72,6 +80,16 @@ export function BusinessHoursEditor({ initialHours }: { initialHours: DayRow[] }
         <button className="btn btn-pink btn-sm" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save Hours"}</button>
         {msg && <span style={{ fontSize: "0.78rem", color: "var(--grey-mid)" }}>{msg}</span>}
       </div>
+      {warnings.length > 0 && (
+        <div style={{ marginTop: "0.75rem", padding: "0.75rem", background: "#fef3c7", borderRadius: 6, border: "1px solid #f59e0b" }}>
+          <p style={{ fontSize: "0.82rem", fontWeight: 600, color: "#92400e", marginBottom: "0.4rem" }}>
+            ⚠️ The following existing bookings are outside the new hours and may need to be rescheduled:
+          </p>
+          <ul style={{ fontSize: "0.78rem", color: "#92400e", paddingLeft: "1.2rem" }}>
+            {warnings.map((w, i) => <li key={i}>{w}</li>)}
+          </ul>
+        </div>
+      )}
     </>
   );
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { generateSlots } from "@/lib/availability";
+import { generateSlots, easternDayBounds } from "@/lib/availability";
 import { availabilityQuerySchema } from "@/lib/validation";
 
 export async function GET(request: Request) {
@@ -14,8 +14,7 @@ export async function GET(request: Request) {
   const service = await supabase.from("services").select("*").eq("id", service_id).eq("is_active", true).single();
   if (service.error) return NextResponse.json({ error: "Service not found." }, { status: 404 });
 
-  const dayStart = new Date(`${date}T00:00:00`).toISOString();
-  const dayEnd = new Date(`${date}T23:59:59`).toISOString();
+  const { dayStart, dayEnd } = easternDayBounds(date);
 
   const [rules, bookings, blocked, override] = await Promise.all([
     supabase.from("availability_rules").select("*").eq("is_active", true),

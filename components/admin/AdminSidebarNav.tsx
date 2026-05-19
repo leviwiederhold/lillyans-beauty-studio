@@ -19,7 +19,7 @@ const ICONS: Record<string, React.ReactNode> = {
   settings: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
 };
 
-export function AdminSidebarNav({ href, label, icon }: { href: string; label: string; icon: string }) {
+export function AdminSidebarNav({ href, label, icon, badge = 0 }: { href: string; label: string; icon: string; badge?: number }) {
   const pathname = usePathname();
   const isActive = pathname === href || (href !== "/admin" && pathname.startsWith(href));
 
@@ -27,6 +27,20 @@ export function AdminSidebarNav({ href, label, icon }: { href: string; label: st
     <Link href={href} className={`sidebar-link${isActive ? " active" : ""}`}>
       {ICONS[icon]}
       {label}
+      {badge > 0 && (
+        <span style={{
+          marginLeft: "auto",
+          background: "#ef4444",
+          color: "#fff",
+          borderRadius: "999px",
+          fontSize: "0.65rem",
+          fontWeight: 700,
+          padding: "0.1rem 0.4rem",
+          lineHeight: 1.4,
+          minWidth: "1.2rem",
+          textAlign: "center",
+        }}>{badge}</span>
+      )}
     </Link>
   );
 }

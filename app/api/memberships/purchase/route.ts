@@ -17,14 +17,19 @@ export async function POST(req: NextRequest) {
   if (!supabase) return NextResponse.json({ error: "Database not configured." }, { status: 500 });
 
   const { data: plan, error: planErr } = await supabase
-    .from("membership_plans")
-    .select("id, name, price_cents, price_monthly")
+    .from("memberships")
+    .select("id, name, plan_name, price_cents, price_label")
     .eq("id", plan_id)
+    .eq("status", "plan")
     .single();
 
   if (planErr || !plan) return NextResponse.json({ error: "Plan not found." }, { status: 404 });
 
-  const amountCents = plan.price_cents ?? Math.round(Number(plan.price_monthly || 0) * 100);
+  // price_cents is the canonical source; fall back to parsing price_label ("$130/mo" → 13000)
+  const labelCents = plan.price_label
+    ? Math.round(parseFloat(String(plan.price_label).replace(/[^0-9.]/g, "")) * 100)
+    : 0;
+  const amountCents = (plan.price_cents as number | null) ?? labelCents;
   if (!amountCents) return NextResponse.json({ error: "Plan has no price configured." }, { status: 400 });
 
   if (!squareConfigured()) {
@@ -35,9 +40,10 @@ export async function POST(req: NextRequest) {
   const idempotencyKey = `membership-${userData.user.id}-${plan_id}-${Date.now()}`;
 
   try {
+    const planDisplayName = String((plan.name as string | null) ?? (plan.plan_name as string | null) ?? "Membership");
     const link = await createSquarePaymentLink({
       idempotencyKey,
-      name: `${String(plan.name)} Membership — Lillyan's Beauty Studio`,
+      name: `${planDisplayName} Membership — Lillyan's Beauty Studio`,
       amountCents,
       clientEmail: userData.user.email,
       redirectPath: "/account?membership=active",

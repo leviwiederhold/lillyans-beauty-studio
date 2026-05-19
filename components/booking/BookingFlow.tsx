@@ -129,6 +129,7 @@ export function BookingFlow({
   const [codeStatus, setCodeStatus] = useState<"idle" | "valid" | "invalid">("idle");
   const [codeMsg, setCodeMsg] = useState("");
   const [submitMsg, setSubmitMsg] = useState("");
+  const [confirming, setConfirming] = useState(false);
   const [done, setDone] = useState(false);
 
   const service = useMemo(() => services.find((s) => s.id === serviceId), [services, serviceId]);
@@ -199,6 +200,8 @@ export function BookingFlow({
   }
 
   async function confirm() {
+    if (confirming) return;
+    setConfirming(true);
     setSubmitMsg("Submitting…");
     const payload = {
       service_id: serviceId,
@@ -217,6 +220,11 @@ export function BookingFlow({
       });
       const data = await res.json();
       if (!res.ok) {
+        // Session expired → redirect to login
+        if (res.status === 401) {
+          window.location.assign("/login?next=/book");
+          return;
+        }
         const errMsg =
           typeof data.error === "string"
             ? data.error
@@ -224,6 +232,7 @@ export function BookingFlow({
             ? JSON.stringify(data.error)
             : "Could not create booking.";
         setSubmitMsg(errMsg);
+        setConfirming(false);
         // 409 = slot just taken — send back to date/time step and refresh slots
         if (res.status === 409) {
           setSelectedSlot("");
@@ -239,6 +248,7 @@ export function BookingFlow({
       setDone(true);
     } catch {
       setSubmitMsg("An error occurred. Please try again.");
+      setConfirming(false);
     }
   }
 
@@ -641,8 +651,9 @@ export function BookingFlow({
             {step === 4 && (
               <button
                 onClick={confirm}
+                disabled={confirming}
                 style={{
-                  background: "#22c55e",
+                  background: confirming ? "#86efac" : "#22c55e",
                   color: "#fff",
                   border: "none",
                   padding: "10px 22px",
@@ -650,16 +661,19 @@ export function BookingFlow({
                   fontFamily: "inherit",
                   fontSize: "0.9rem",
                   fontWeight: 500,
-                  cursor: "pointer",
+                  cursor: confirming ? "not-allowed" : "pointer",
                   display: "flex",
                   alignItems: "center",
                   gap: "0.4rem",
+                  opacity: confirming ? 0.7 : 1,
                 }}
               >
-                Confirm Booking
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                {confirming ? "Submitting…" : "Confirm Booking"}
+                {!confirming && (
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
               </button>
             )}
           </div>

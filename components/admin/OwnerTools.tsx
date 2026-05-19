@@ -7,6 +7,8 @@ export function OwnerTools({ duplicatePairs }: { duplicatePairs: { primary: unkn
   const [blockStart, setBlockStart] = useState("");
   const [blockEnd, setBlockEnd] = useState("");
   const [blockReason, setBlockReason] = useState("");
+  type BlockConflict = { id: string; client_name: string; service_type: string; starts_at: string };
+  const [blockConflicts, setBlockConflicts] = useState<BlockConflict[]>([]);
   const [overrideDate, setOverrideDate] = useState("");
   const [overrideOpen, setOverrideOpen] = useState("");
   const [overrideClose, setOverrideClose] = useState("");
@@ -20,17 +22,23 @@ export function OwnerTools({ duplicatePairs }: { duplicatePairs: { primary: unkn
     setMessage(res.ok ? "Saved." : body.error || "Request failed.");
   }
 
-  async function blockTime() {
+  async function blockTime(force = false) {
     if (!blockStart || !blockEnd) { setMessage("Start and end are required."); return; }
     setMessage("Saving...");
+    setBlockConflicts([]);
     const res = await fetch("/api/admin/blocked-times", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ starts_at: blockStart, ends_at: blockEnd, reason: blockReason || null }),
+      body: JSON.stringify({ starts_at: blockStart, ends_at: blockEnd, reason: blockReason || null, force }),
     });
     const body = await res.json().catch(() => ({}));
+    if (res.ok && body.requiresConfirmation) {
+      setBlockConflicts(body.conflicts || []);
+      setMessage("⚠️ This time has existing bookings (see below). Click \"Block Anyway\" to proceed.");
+      return;
+    }
     setMessage(res.ok ? "Time blocked." : body.error || "Could not block time.");
-    if (res.ok) { setBlockStart(""); setBlockEnd(""); setBlockReason(""); }
+    if (res.ok && !body.requiresConfirmation) { setBlockStart(""); setBlockEnd(""); setBlockReason(""); setBlockConflicts([]); }
   }
 
   async function saveOverride() {
@@ -105,7 +113,35 @@ export function OwnerTools({ duplicatePairs }: { duplicatePairs: { primary: unkn
             onChange={(e) => setBlockReason(e.target.value)}
           />
         </label>
-        <button className="btn-primary" onClick={blockTime}>Block This Time</button>
+        <button className="btn-primary" onClick={() => blockTime(false)}>Block This Time</button>
+        {blockConflicts.length > 0 && (
+          <div style={{ marginTop: "0.75rem", padding: "0.75rem", background: "#fef3c7", borderRadius: 6, border: "1px solid #f59e0b" }}>
+            <p style={{ fontSize: "0.82rem", fontWeight: 600, color: "#92400e", marginBottom: "0.4rem" }}>
+              ⚠️ Existing bookings in this time range:
+            </p>
+            <ul style={{ fontSize: "0.78rem", color: "#92400e", marginBottom: "0.75rem", paddingLeft: "1rem" }}>
+              {blockConflicts.map((c) => (
+                <li key={c.id}>
+                  {c.client_name} — {c.service_type} ({new Date(c.starts_at).toLocaleString()})
+                </li>
+              ))}
+            </ul>
+            <button
+              className="btn btn-sm"
+              style={{ background: "#ef4444", color: "#fff", border: "none", cursor: "pointer", borderRadius: 6, padding: "0.4rem 0.9rem", fontFamily: "inherit", fontSize: "0.8rem" }}
+              onClick={() => blockTime(true)}
+            >
+              Block Anyway
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
+              style={{ marginLeft: "0.5rem" }}
+              onClick={() => { setBlockConflicts([]); setMessage(""); }}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Special Date Hours */}

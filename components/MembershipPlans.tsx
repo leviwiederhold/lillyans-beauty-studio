@@ -6,12 +6,11 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type DbPlan = {
   id: string;
-  name: string;
+  name?: string | null;
+  plan_name?: string | null;
   price_cents?: number | null;
-  price_monthly?: number | null;
-  description?: string | null;
+  price_label?: string | null;
   perks?: string[] | null;
-  is_active?: boolean;
 };
 
 // Fallback hardcoded plans if DB returns nothing
@@ -71,10 +70,14 @@ export function MembershipPlans({ dbPlans = [] }: { dbPlans?: DbPlan[] }) {
   const plans = dbPlans.length > 0
     ? dbPlans.map((p, i) => {
         const fb = FALLBACK_PLANS[i] ?? FALLBACK_PLANS[0];
-        const price = p.price_cents ? p.price_cents / 100 : (p.price_monthly ?? fb.price);
+        const labelCents = p.price_label
+          ? Math.round(parseFloat(String(p.price_label).replace(/[^0-9.]/g, "")) * 100)
+          : 0;
+        const priceCents = p.price_cents ?? labelCents;
+        const price = priceCents > 0 ? priceCents / 100 : fb.price;
         return {
           id: p.id,
-          name: p.name ?? fb.name,
+          name: p.name ?? p.plan_name ?? fb.name,
           price,
           featured: i === 1,
           perks: Array.isArray(p.perks) ? (p.perks as string[]) : fb.perks,
