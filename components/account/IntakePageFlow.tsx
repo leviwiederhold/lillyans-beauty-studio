@@ -52,33 +52,50 @@ export function IntakePageFlow({
   const [updatingFormType, setUpdatingFormType] = useState<string | null>(null);
   const [localForms, setLocalForms] = useState<IntakeFormRecord[]>(initialForms);
   const [fillDone, setFillDone] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // ── Single-form submit handler (used for Update) ─────────────────────────
   async function handleSingleFormNext(formData: Record<string, unknown>) {
     if (!updatingFormType) return;
-    await fetch("/api/forms", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId,
-        bookingId: null,
-        formType: updatingFormType,
-        serviceCategory: null,
-        serviceName: "Account Update",
-        submittedAt: new Date().toISOString(),
-        fields: formData.fields ?? formData,
-        signature: (formData as Record<string, unknown>).signature ?? null,
-        signature2: (formData as Record<string, unknown>).signature2 ?? null,
-      }),
-    });
-    const now = new Date().toISOString();
-    setLocalForms((prev) =>
-      prev.map((f) =>
-        f.form_type === updatingFormType ? { ...f, submitted_at: now } : f
-      )
-    );
-    setUpdatingFormType(null);
-    setMode("list");
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch("/api/forms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          bookingId: null,
+          formType: updatingFormType,
+          serviceCategory: null,
+          serviceName: "Account Update",
+          submittedAt: new Date().toISOString(),
+          fields: formData.fields ?? formData,
+          signature: (formData as Record<string, unknown>).signature ?? null,
+          signature2: (formData as Record<string, unknown>).signature2 ?? null,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const msg = typeof body.error === "string" ? body.error : "Failed to save form. Please try again.";
+        setSubmitError(msg);
+        setSubmitting(false);
+        return;
+      }
+      const now = new Date().toISOString();
+      setLocalForms((prev) =>
+        prev.map((f) =>
+          f.form_type === updatingFormType ? { ...f, submitted_at: now } : f
+        )
+      );
+      setUpdatingFormType(null);
+      setMode("list");
+    } catch {
+      setSubmitError("Network error. Please check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // ── Render single form for Update mode ──────────────────────────────────
@@ -108,7 +125,21 @@ export function IntakePageFlow({
   // MODE: update-single
   // ─────────────────────────────────────────────────────────────────────────
   if (mode === "update-single") {
-    return <div style={{ marginTop: "0.5rem" }}>{renderSingleForm()}</div>;
+    return (
+      <div style={{ marginTop: "0.5rem" }}>
+        {submitError && (
+          <div style={{ marginBottom: "0.75rem", padding: "0.75rem 1rem", background: "#fdecea", border: "1px solid #f5c6cb", borderRadius: 8, color: "#7a1a1a", fontSize: "0.85rem" }}>
+            {submitError}
+          </div>
+        )}
+        {submitting && (
+          <div style={{ marginBottom: "0.75rem", fontSize: "0.85rem", color: "var(--grey-mid)" }}>
+            Saving…
+          </div>
+        )}
+        {renderSingleForm()}
+      </div>
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────

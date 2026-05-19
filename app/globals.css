@@ -257,7 +257,7 @@ textarea.field-input{resize:vertical;min-height:80px;}
 .sticky-call{display:none;position:fixed;bottom:76px;right:18px;z-index:200;background:var(--pink-dark);color:#fff;width:52px;height:52px;border-radius:50%;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(196,96,122,.4);text-decoration:none;}
 
 /* ── Booking flow — slide transitions ─────────────────────────────────── */
-.bk-outer{background:#f7f3f4;}
+.bk-outer{background:#f7f3f4;overflow-x:hidden;}
 .bk-page-intro{}
 .bk-slide-wrap{}
 .bk-anim-forward{animation:bkEnterRight 0.35s cubic-bezier(0.4,0,0.2,1) both;}

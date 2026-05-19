@@ -41,7 +41,7 @@ function LoginForm() {
         <p className="auth-notice">Sign in is required before booking or submitting service intake forms.</p>
         <label>Email<input name="email" type="email" autoComplete="email" placeholder="you@example.com" required /></label>
         <label>Password<span className="password-wrap"><input name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="Your password" required /><button type="button" onClick={() => setShowPassword((v) => !v)}>{showPassword ? "Hide" : "Show"}</button></span></label>
-        <a className="auth-link" href={`mailto:lillyansbeautystudio@gmail.com?subject=Password help`}>Forgot your password?</a>
+        <a className="auth-link" href="/forgot-password">Forgot your password?</a>
         {message && <p className="admin-message">{message}</p>}
         <div className="auth-actions"><button className="btn-primary">Sign In</button><a className="btn-outline" href={`/signup?next=${encodeURIComponent(next)}`}>Create Account</a></div>
         <p className="auth-privacy">Your client account keeps booking and intake information connected to you securely.</p>
