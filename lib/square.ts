@@ -115,5 +115,14 @@ export function verifySquareWebhookSignature(rawBody: string, signature: string 
   const hmac = crypto.createHmac("sha256", key);
   hmac.update(notificationUrl + rawBody);
   const digest = hmac.digest("base64");
-  return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
+  const a = Buffer.from(digest);
+  const b = Buffer.from(signature);
+  // timingSafeEqual throws if the buffers differ in length; a mismatched length
+  // is simply an invalid signature, so reject cleanly instead of throwing a 500.
+  if (a.length !== b.length) return false;
+  try {
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }

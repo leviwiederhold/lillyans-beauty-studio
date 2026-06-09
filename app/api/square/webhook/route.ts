@@ -37,6 +37,13 @@ export async function POST(request: Request) {
     const amountCents = parseInt(parts[2] ?? "0", 10);
     const recipientName = parts[3] ?? "";
 
+    // Idempotency: Square delivers webhooks at-least-once. If we already issued a
+    // code for this order, do nothing (avoid duplicate codes + duplicate emails).
+    if (orderId) {
+      const existing = await supabase.from("gift_card_codes").select("id").eq("square_order_id", orderId).maybeSingle();
+      if (existing.data) return NextResponse.json({ ok: true, deduped: true });
+    }
+
     const code = generateGiftCardCode();
     await supabase.from("gift_card_codes").insert({
       code,
@@ -70,6 +77,12 @@ export async function POST(request: Request) {
     const userId = parts[2] ?? "";
 
     if (planId && userId) {
+      // Idempotency: skip if this order already produced a membership.
+      if (orderId) {
+        const existing = await supabase.from("memberships").select("id").eq("square_order_id", orderId).maybeSingle();
+        if (existing.data) return NextResponse.json({ ok: true, deduped: true });
+      }
+
       const { data: plan } = await supabase
         .from("memberships")
         .select("id, name, plan_name, price_cents")
@@ -119,6 +132,13 @@ export async function POST(request: Request) {
 
   // ── Booking deposit ──────────────────────────────────────────────────────
   if (orderId && status === "COMPLETED" && paymentNote.startsWith("booking_id:")) {
+    // Idempotency: only act on the first transition to paid. On webhook retries
+    // the booking is already "paid" — skip so we don't re-send confirmation emails.
+    const prior = await supabase.from("bookings").select("id, deposit_status").eq("square_order_id", orderId).maybeSingle();
+    if (prior.data?.deposit_status === "paid") {
+      return NextResponse.json({ ok: true, deduped: true });
+    }
+
     const { data: booking } = await supabase
       .from("bookings")
       .update({
