@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { ADDRESS, BOOKING_URL, EMAIL, GIFT_CARD_URL, MAPS_URL, PHONE, PHONE_SMS, PHONE_TEL } from "@/lib/constants";
 import { ContactForm } from "@/components/ContactForm";
 import { IntakeModal, IntakeType } from "@/components/IntakeModal";
@@ -63,7 +64,7 @@ export function LandingPage() {
 function Navbar({ navOpen, setNavOpen }: { navOpen: boolean; setNavOpen: (open: boolean) => void }) {
   return (
     <nav>
-      <a href="#" className="nav-logo">Lillyan&apos;s Beauty Studio<span>Cincinnati, Ohio</span></a>
+      <Link href="/" className="nav-logo">Lillyan&apos;s Beauty Studio<span>Cincinnati, Ohio</span></Link>
       <ul className={`nav-links ${navOpen ? "open" : ""}`}>
         {["Weddings", "Permanent Makeup", "About", "Memberships", "Gallery", "Contact"].map((label) => (
           <li key={label}>
@@ -152,7 +153,7 @@ function FinalCta() {
 }
 
 function Footer() {
-  return <footer><div className="footer-grid"><div className="footer-brand"><a href="#" className="nav-logo">Lillyan&apos;s Beauty Studio<span>Cincinnati, Ohio</span></a><p>Certified wedding makeup artist and permanent makeup specialist serving Cincinnati, Ohio.</p><div className="footer-social"><SocialLink href="https://www.instagram.com/lillyans_beautystudio/" label="Instagram"><InstagramIcon /></SocialLink><SocialLink href="https://www.facebook.com/lillyansbeautystudio" label="Facebook"><FacebookIcon /></SocialLink><SocialLink href="https://www.tiktok.com/@lillyans_beautystudio" label="TikTok"><TikTokIcon /></SocialLink></div></div><div className="footer-col"><h4>Priority Services</h4><ul>{["Wedding Makeup", "Permanent Makeup", "Microblading", "Powder Brows", "Lip Blush"].map((x) => <li key={x}><a href={x === "Wedding Makeup" ? "#weddings" : "#permanent-makeup"}>{x}</a></li>)}</ul></div><div className="footer-col"><h4>Studio</h4><ul><li><a href="/about">About Lilly</a></li><li><a href="/memberships">Memberships</a></li><li><a href="#gallery">Gallery</a></li><li><a href="/care">Pre + Post Care</a></li><li><a href={GIFT_CARD_URL}>Gift Cards</a></li></ul></div><div className="footer-col"><h4>Contact</h4><ul><li><a href={`tel:${PHONE_TEL}`}>{PHONE}</a></li><li><a href={`mailto:${EMAIL}`}>{EMAIL}</a></li><li><a href={MAPS_URL} target="_blank">{ADDRESS}</a></li></ul></div></div><div className="footer-bottom"><p>© 2025 Lillyan&apos;s Beauty Studio · Cincinnati, Ohio · All rights reserved.</p><p>Certified Wedding Makeup Artist · Licensed Permanent Makeup Specialist</p></div></footer>;
+  return <footer><div className="footer-grid"><div className="footer-brand"><Link href="/" className="nav-logo">Lillyan&apos;s Beauty Studio<span>Cincinnati, Ohio</span></Link><p>Certified wedding makeup artist and permanent makeup specialist serving Cincinnati, Ohio.</p><div className="footer-social"><SocialLink href="https://www.instagram.com/lillyans_beautystudio/" label="Instagram"><InstagramIcon /></SocialLink><SocialLink href="https://www.facebook.com/lillyansbeautystudio" label="Facebook"><FacebookIcon /></SocialLink><SocialLink href="https://www.tiktok.com/@lillyans_beautystudio" label="TikTok"><TikTokIcon /></SocialLink></div></div><div className="footer-col"><h4>Priority Services</h4><ul>{["Wedding Makeup", "Permanent Makeup", "Microblading", "Powder Brows", "Lip Blush"].map((x) => <li key={x}><a href={x === "Wedding Makeup" ? "#weddings" : "#permanent-makeup"}>{x}</a></li>)}</ul></div><div className="footer-col"><h4>Studio</h4><ul><li><a href="/about">About Lilly</a></li><li><a href="/memberships">Memberships</a></li><li><a href="#gallery">Gallery</a></li><li><a href="/care">Pre + Post Care</a></li><li><a href={GIFT_CARD_URL}>Gift Cards</a></li></ul></div><div className="footer-col"><h4>Contact</h4><ul><li><a href={`tel:${PHONE_TEL}`}>{PHONE}</a></li><li><a href={`mailto:${EMAIL}`}>{EMAIL}</a></li><li><a href={MAPS_URL} target="_blank">{ADDRESS}</a></li></ul></div></div><div className="footer-bottom"><p>© 2025 Lillyan&apos;s Beauty Studio · Cincinnati, Ohio · All rights reserved.</p><p>Certified Wedding Makeup Artist · Licensed Permanent Makeup Specialist</p></div></footer>;
 }
 
 function SocialLink({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
