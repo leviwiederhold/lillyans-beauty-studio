@@ -56,7 +56,8 @@ export async function POST(request: Request) {
   if (!slots.includes(starts.toISOString())) return NextResponse.json({ error: "That time is no longer available." }, { status: 409 });
 
   const code = data.gift_card_code?.trim();
-  let depositRequired = true;
+  // Respect the service's deposit configuration (default to requiring a deposit).
+  let depositRequired = service.data.requires_deposit !== false;
   let giftCardStatus = null;
   let giftCardCodeId: string | null = null;
   let giftCardUsedCount = 0;
@@ -75,31 +76,26 @@ export async function POST(request: Request) {
     }
   }
 
-  // Check for active membership → waive deposit (before client upsert so we use user id)
+  // Determine why a deposit is waived, for accurate record-keeping.
+  // Precedence: a service that requires no deposit < gift card < active membership.
+  let waiverReason: string | null = depositRequired ? null : "no_deposit";
+  if (giftCardCodeId) waiverReason = "gift_card";
+
+  // Check for an active membership → waive deposit. memberships.client_id references
+  // clients.id, so resolve the caller's client row by profile_id first.
   if (depositRequired) {
-    const membership = await supabase
-      .from("memberships")
-      .select("id, plan_name")
-      .eq("client_id", userData.user.id) // will refine below once client is known
-      .eq("status", "active")
-      .maybeSingle();
-    // We check by profile_id on clients table after client upsert; pre-check by user id in profiles
-    if (!membership.data) {
-      // Also try looking up by profile_id → client_id
-      const clientLookup = await supabase.from("clients").select("id").eq("profile_id", userData.user.id).maybeSingle();
-      if (clientLookup.data) {
-        const membershipByClient = await supabase
-          .from("memberships")
-          .select("id, plan_name")
-          .eq("client_id", clientLookup.data.id)
-          .eq("status", "active")
-          .maybeSingle();
-        if (membershipByClient.data) {
-          depositRequired = false;
-        }
+    const clientLookup = await supabase.from("clients").select("id").eq("profile_id", userData.user.id).maybeSingle();
+    if (clientLookup.data) {
+      const membership = await supabase
+        .from("memberships")
+        .select("id")
+        .eq("client_id", clientLookup.data.id)
+        .eq("status", "active")
+        .maybeSingle();
+      if (membership.data) {
+        depositRequired = false;
+        waiverReason = "membership";
       }
-    } else {
-      depositRequired = false;
     }
   }
 
@@ -133,7 +129,7 @@ export async function POST(request: Request) {
     ends_at: ends.toISOString(),
     deposit_required: depositRequired,
     deposit_status: depositRequired ? canCreateSquareCheckout ? "payment_link_pending" : "pending" : "waived",
-    waiver_reason: depositRequired ? null : (giftCardCodeId ? "gift_card" : "membership"),
+    waiver_reason: depositRequired ? null : waiverReason,
     gift_card_code_id: giftCardCodeId,
     service_total: serviceTotal,
     deposit_percent: depositPercent,
