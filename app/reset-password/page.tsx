@@ -12,14 +12,43 @@ function ResetPasswordForm() {
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [ready, setReady] = useState(false);
+  const [linkError, setLinkError] = useState(false);
 
-  // Supabase sends the session via URL hash — exchange it so auth.updateUser works
+  // Supabase delivers the recovery session via the URL (PKCE ?code= or legacy #hash).
+  // The browser client auto-exchanges it on init, firing an auth event. We must handle
+  // three cases robustly:
+  //  1. The event fires AFTER our listener attaches (PASSWORD_RECOVERY / SIGNED_IN).
+  //  2. The event already fired BEFORE we attached (race) — caught by getSession().
+  //  3. The link is invalid/expired — no session ever appears; show an error.
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") setReady(true);
+    let resolved = false;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION"))) {
+        resolved = true;
+        setReady(true);
+      }
     });
-    return () => subscription.unsubscribe();
+
+    // Catch the race: the recovery session may already be established before the
+    // listener above was registered.
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        resolved = true;
+        setReady(true);
+      }
+    });
+
+    // Fallback: if no recovery session materializes, the link is invalid or expired.
+    const timer = setTimeout(() => {
+      if (!resolved) setLinkError(true);
+    }, 4000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timer);
+    };
   }, []);
 
   async function submit(e: React.FormEvent) {
@@ -39,11 +68,25 @@ function ResetPasswordForm() {
       <main className="auth-page">
         <header className="auth-header">
           <Link href="/" className="nav-logo">Lillyan&apos;s Beauty Studio<span>Cincinnati, Ohio</span></Link>
+          <Link href="/login" className="auth-link">Back to Sign In</Link>
         </header>
         <div className="auth-card">
           <p className="auth-eyebrow">Account Recovery</p>
           <h1>Reset Password</h1>
-          <p className="auth-copy">Verifying your reset link…</p>
+          {linkError ? (
+            <>
+              <p className="auth-copy">
+                This password reset link is invalid or has expired. Reset links can only be used
+                once and expire after a short time.
+              </p>
+              <div className="auth-actions">
+                <Link href="/forgot-password" className="btn-primary">Request a New Link</Link>
+                <Link href="/login" className="btn-outline">Back to Sign In</Link>
+              </div>
+            </>
+          ) : (
+            <p className="auth-copy">Verifying your reset link…</p>
+          )}
         </div>
       </main>
     );
