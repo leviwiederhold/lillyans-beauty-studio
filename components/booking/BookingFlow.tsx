@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { ADDRESS } from "@/lib/constants";
+import { requiredFormsForCategory } from "@/lib/intake";
 import ServiceSelection from "./ServiceSelection";
 import IntakeStep from "@/components/forms/IntakeStep";
 
@@ -22,14 +23,6 @@ type ExistingFormType = { form_type: string; submitted_at: string };
 type Category = { name: string; services: Service[] };
 
 const STEPS = ["Service", "Date & Time", "Intake", "Code", "Confirm"];
-
-const FORM_SEQUENCES: Record<string, string[]> = {
-  "Permanent Makeup": ["pmu_intake", "informed_consent", "liability_waiver"],
-  "Facials":          ["confidential_intake", "liability_waiver"],
-  "Waxing":           ["confidential_intake", "liability_waiver"],
-  "Lifts & Tints":    ["confidential_intake", "liability_waiver"],
-  "Formal Makeup":    ["confidential_intake", "liability_waiver"],
-};
 
 function Stepper({ step }: { step: number }) {
   return (
@@ -442,7 +435,7 @@ export function BookingFlow({
 
             {/* ── STEP 2: Intake ────────────────────────────────────────── */}
             {step === 2 && selectedServiceInfo && (() => {
-              const requiredForms = FORM_SEQUENCES[selectedServiceInfo.category] ?? ["confidential_intake", "liability_waiver"];
+              const requiredForms = requiredFormsForCategory(selectedServiceInfo.category);
               const allFormsOnFile = requiredForms.every((ft) =>
                 existingFormTypes.some((e) => e.form_type === ft)
               );
@@ -681,7 +674,7 @@ export function BookingFlow({
 
         {/* On-file "forms" step shows its own Continue in the footer */}
         {step === 2 && selectedServiceInfo && (() => {
-          const requiredForms = FORM_SEQUENCES[selectedServiceInfo.category] ?? ["confidential_intake", "liability_waiver"];
+          const requiredForms = requiredFormsForCategory(selectedServiceInfo.category);
           const allFormsOnFile = requiredForms.every((ft) =>
             existingFormTypes.some((e) => e.form_type === ft)
           );

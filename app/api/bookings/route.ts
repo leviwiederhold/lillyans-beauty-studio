@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { generateSlots, easternDayBounds } from "@/lib/availability";
+import { missingForms } from "@/lib/intake";
 import { bookingRequestSchema } from "@/lib/validation";
 import { notifyAdmin, notifyClient } from "@/lib/notifications";
 import { createSquareDepositLink, squareConfigured } from "@/lib/square";
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
   if (!supabase) return NextResponse.json({ error: "Supabase is not configured." }, { status: 500 });
   const data = parsed.data;
 
-  const service = await supabase.from("services").select("*").eq("id", data.service_id).eq("is_active", true).single();
+  const service = await supabase.from("services").select("*, service_categories(name)").eq("id", data.service_id).eq("is_active", true).single();
   if (service.error) return NextResponse.json({ error: "Service not found." }, { status: 404 });
 
   const starts = new Date(data.starts_at);
@@ -106,8 +107,24 @@ export async function POST(request: Request) {
     ? await supabase.from("clients").update(clientPayload).eq("id", existingClient.data.id).select("id").single()
     : await supabase.from("clients").insert(clientPayload).select("id").single();
 
-  if (service.data.requires_intake && (!data.consent_accuracy || !data.consent_updates || !data.consent_policy || !data.signature)) {
-    return NextResponse.json({ error: "Required intake consent and signature are missing." }, { status: 400 });
+  // Intake gate: intake/consent forms are submitted separately to /api/forms
+  // (stored in client_forms), not in the booking payload. Verify the required
+  // forms for this service's category are actually on file for this user before
+  // allowing the booking.
+  if (service.data.requires_intake) {
+    const categoryName = (service.data.service_categories as { name?: string } | null)?.name ?? null;
+    const onFile = await supabase
+      .from("client_forms")
+      .select("form_type")
+      .eq("user_id", userData.user.id);
+    const onFileTypes = (onFile.data ?? []).map((f) => f.form_type as string);
+    const missing = missingForms(categoryName, onFileTypes);
+    if (missing.length > 0) {
+      return NextResponse.json(
+        { error: "Please complete your required intake forms before booking.", missingForms: missing },
+        { status: 400 }
+      );
+    }
   }
   const settings = await supabase.from("business_settings").select("gift_card_auto_confirm").eq("id", 1).maybeSingle();
 
@@ -148,25 +165,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: booking.error.message }, { status: 500 });
   }
 
-  if (service.data.requires_intake) {
-    await supabase.from("intake_forms").insert({
-      client_id: client.data?.id || null,
-      type: service.data.intake_type || "wedding_inquiry",
-      service_label: service.data.name,
-      service_details: {
-        medications: data.medications || "",
-        allergies: data.allergies || "",
-        skin_conditions: data.skin_conditions || "",
-        previous_procedures: data.previous_procedures || ""
-      },
-      consent_accuracy: true,
-      consent_updates: true,
-      consent_policy: true,
-      signature: data.signature,
-      signature_date: new Date().toISOString().slice(0, 10),
-      raw_payload: data
-    });
-  }
+  // Note: intake/consent forms are submitted separately via /api/forms and stored
+  // in client_forms (the canonical store, shown under admin "Client Forms"). We no
+  // longer write a placeholder row to the legacy intake_forms table here.
 
   if (depositRequired && depositAmount > 0) {
     await supabase.from("deposits").insert({ booking_id: booking.data.id, amount_cents: depositAmount, status: "pending" });
