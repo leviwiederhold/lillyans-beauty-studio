@@ -15,15 +15,14 @@ function buildSidebar(unreviewedForms: number) {
       label: "Bookings",
       links: [
         { href: "/admin/bookings", label: "All Bookings", icon: "book", badge: 0 },
-        { href: "/admin/intake-forms", label: "Intake Forms", icon: "clipboard", badge: 0 }
+        { href: "/admin/client-forms", label: "Intake Forms", icon: "clipboard", badge: unreviewedForms }
       ]
     },
     {
       label: "Clients",
       links: [
         { href: "/admin/clients", label: "Client List", icon: "users", badge: 0 },
-        { href: "/admin/memberships", label: "Memberships", icon: "star", badge: 0 },
-        { href: "/admin/client-forms", label: "Client Forms", icon: "clipboard", badge: unreviewedForms }
+        { href: "/admin/memberships", label: "Memberships", icon: "star", badge: 0 }
       ]
     },
     {

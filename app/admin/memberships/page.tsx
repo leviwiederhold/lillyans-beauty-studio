@@ -6,7 +6,12 @@ export const dynamic = "force-dynamic";
 
 export default async function MembershipsPage() {
   const { supabase } = await requireAdmin();
-  const memberships = await supabase?.from("memberships").select("*, clients(first_name,last_name,email,phone)").order("renewal_date");
+  // Exclude plan-definition rows (status='plan'); show only real client subscriptions.
+  const memberships = await supabase
+    ?.from("memberships")
+    .select("*, clients(first_name,last_name,email,phone)")
+    .neq("status", "plan")
+    .order("renewal_date");
   const rows = memberships?.data || [];
 
   return (
