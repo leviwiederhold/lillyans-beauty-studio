@@ -88,13 +88,17 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       const planName = String((plan as { name?: string; plan_name?: string } | null)?.name ?? (plan as { name?: string; plan_name?: string } | null)?.plan_name ?? "Membership");
+      const nowIso = new Date().toISOString();
       await supabase.from("memberships").insert({
         client_id: client?.id ?? null,
         plan_ref_id: planId || null,
         plan_name: planName,
         status: "active",
+        payment_status: "paid",
+        is_active: true,
+        start_date: nowIso.slice(0, 10),     // date column the account/admin UI reads
+        started_at: nowIso,                   // timestamptz audit column
         renewal_date: renewalDate.toISOString().slice(0, 10),
-        started_at: new Date().toISOString(),
         square_order_id: orderId || null,
       });
 
