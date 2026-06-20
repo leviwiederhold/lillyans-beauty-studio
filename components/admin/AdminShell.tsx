@@ -50,11 +50,16 @@ export async function AdminShell({ title, eyebrow, children }: { title: string; 
   const supabase = createSupabaseAdminClient();
   let unreviewedForms = 0;
   if (supabase) {
-    const { count } = await supabase
-      .from("client_forms")
-      .select("id", { count: "exact", head: true })
-      .eq("reviewed", false);
-    unreviewedForms = count ?? 0;
+    try {
+      const { count } = await supabase
+        .from("client_forms")
+        .select("id", { count: "exact", head: true })
+        .eq("reviewed", false);
+      unreviewedForms = count ?? 0;
+    } catch {
+      // Supabase unreachable or table missing — badge is non-critical, default to 0.
+      unreviewedForms = 0;
+    }
   }
   const SIDEBAR = buildSidebar(unreviewedForms);
   return (
