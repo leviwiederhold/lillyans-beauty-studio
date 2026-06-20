@@ -20,7 +20,13 @@ export async function proxy(request: NextRequest) {
     }
   });
 
-  await supabase.auth.getUser();
+  // Refresh the session here (a writable context) so Server Components never have
+  // to refresh during render. Never throw out of the proxy.
+  try {
+    await supabase.auth.getUser();
+  } catch {
+    // ignore — downstream treats this as signed-out
+  }
   return response;
 }
 

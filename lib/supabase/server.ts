@@ -15,9 +15,18 @@ export async function createSupabaseServerClient() {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-        });
+        // In a Server Component render, cookies() is read-only and .set() throws
+        // ("Cookies can only be modified in a Server Action or Route Handler").
+        // Supabase calls this when refreshing an expiring token. Swallow it: the
+        // middleware refreshes the session in a writable context, so an ignored
+        // write here is safe and prevents an unhandled Server Components crash.
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        } catch {
+          // Called from a Server Component — safe to ignore (see middleware.ts).
+        }
       }
     }
   });
