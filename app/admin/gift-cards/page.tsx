@@ -1,8 +1,7 @@
 import { AdminShell } from "@/components/admin/AdminShell";
-import { DataTable, StatusBadge } from "@/components/admin/AdminDataViews";
+import { EmptyState, StatusBadge } from "@/components/admin/AdminDataViews";
 import { GiftCodeManager } from "@/components/admin/GiftCodeManager";
 import { requireAdmin } from "@/lib/admin";
-import { formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -17,25 +16,35 @@ export default async function GiftCardsPage() {
 
   return (
     <AdminShell title="Gift Cards" eyebrow="Business">
-      <div className="page-hdr">
-        <div className="page-eyebrow">Business</div>
-        <div className="page-title">Gift <em>Cards</em></div>
-        <div className="page-sub">Manage gift card inquiries, no-deposit codes, and redemption status.</div>
+      <div className="filter-row">
+        <div className="filter-pill active">All</div>
+        <div className="filter-pill">New</div>
+        <div className="filter-pill">Contacted</div>
+        <div className="filter-pill">Completed</div>
+        <div style={{ flex: 1 }} />
+        <button className="btn btn-primary" disabled><i className="ti ti-plus" style={{ fontSize: 13, marginRight: 5 }} />Create code</button>
       </div>
-      <div className="two-col">
-        <DataTable title="Gift Card Inquiries" rows={inquiries} columns={[
-          { key: "purchaser_name", label: "Purchaser" },
-          { key: "recipient_name", label: "Recipient" },
-          { key: "amount_requested", label: "Amount" },
-          { key: "occasion", label: "Occasion" },
-          { key: "status", label: "Status", render: (r) => <StatusBadge status={r.status || "new"} /> },
-          { key: "created_at", label: "Received", render: (r) => formatDateTime(r.created_at) }
-        ]} />
-        <div className="card">
-          <div className="card-hdr"><span className="card-hdr-title">Gift Card / No-Deposit Codes</span></div>
-          <div className="card-body">
-            <GiftCodeManager codes={codes} />
+      <div className="card">
+        {inquiries.length === 0 ? (
+          <EmptyState title="No gift card inquiries" subtitle="New public gift card inquiries will appear here." icon="gift" />
+        ) : inquiries.map((inquiry) => (
+          <div className="gc-row" key={inquiry.id}>
+            <div className="gc-info">
+              <div className="gc-name">{inquiry.purchaser_name || "Purchaser"} → {inquiry.recipient_name || "Recipient"}</div>
+              <div className="gc-detail">{inquiry.occasion || "Gift card"} · {inquiry.preferred_contact_method || "Contact"} · {inquiry.purchaser_email}</div>
+              {inquiry.message && <div className="gc-detail" style={{ marginTop: 3, fontStyle: "italic", color: "var(--ink3)" }}>&quot;{inquiry.message}&quot;</div>}
+            </div>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div className="gc-amount">{inquiry.amount_requested || "—"}</div>
+              <StatusBadge status={inquiry.status || "new"} />
+            </div>
           </div>
+        ))}
+      </div>
+      <div style={{ marginTop: 16 }} className="card">
+        <div className="card-hdr"><span className="card-hdr-title">Active Codes</span><button className="card-hdr-action" disabled>+ Create</button></div>
+        <div className="card-body">
+          <GiftCodeManager codes={codes} />
         </div>
       </div>
     </AdminShell>

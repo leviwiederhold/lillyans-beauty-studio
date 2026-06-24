@@ -42,7 +42,7 @@ export default async function BookPage() {
           <div className="bk-page-intro" style={{ marginBottom: "1.5rem" }}>
             <p className="sec-label">Step-by-step</p>
             <h1 className="sec-title">Book Your Appointment</h1>
-            <p className="sec-sub">Licensed esthetician &amp; certified permanent makeup artist — Fayetteville, OH</p>
+            <p className="sec-sub">Licensed esthetician &amp; certified permanent makeup artist — Cincinnati, Ohio</p>
           </div>
           <BookingFlow
             services={servicesRes?.data || []}

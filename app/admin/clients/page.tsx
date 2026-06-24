@@ -36,7 +36,7 @@ export default async function ClientsPage() {
   ];
 
   return (
-    <AdminShell title="Clients & Accounts" eyebrow="Admin / Clients">
+    <AdminShell title="Clients" eyebrow="Manage">
       <OwnerTools duplicatePairs={duplicatePairs} />
       <SearchableClients clients={rows} />
       <DataTable title="Client Activity Timeline" rows={timeline} columns={[

@@ -33,7 +33,7 @@ export async function AppNav() {
     <nav className="app-nav">
       <Link href="/" className="app-nav-logo">
         Lillyan&apos;s Beauty Studio
-        <span>Fayetteville, Ohio</span>
+        <span>Cincinnati, Ohio</span>
       </Link>
       <div className="app-nav-links">
         <Link href="/book" className="nav-link-app">Book</Link>

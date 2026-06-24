@@ -45,30 +45,29 @@ export function BusinessHoursEditor({ initialHours }: { initialHours: DayRow[] }
   return (
     <>
       {hours.map((h) => (
-        <div key={h.day_of_week} className="hours-row">
-          <span className="hours-day">{h.name}</span>
+        <div key={h.day_of_week} className="sched-row">
+          <span className="sched-day">{h.name}</span>
           <button
             type="button"
-            className={`hours-toggle${h.is_closed ? "" : " on"}`}
+            className={`toggle${h.is_closed ? "" : " on"}`}
+            style={{ marginRight: 10 }}
             onClick={() => toggle(h.day_of_week)}
             aria-label={h.is_closed ? "Closed" : "Open"}
           />
           {h.is_closed ? (
-            <span style={{ fontSize: "0.75rem", color: "var(--grey-light)" }}>Closed</span>
+            <span className="sched-closed">Closed</span>
           ) : (
-            <div className="hours-time">
+            <div className="sched-time">
               <input
                 type="time"
-                className="field-input"
-                style={{ width: 110, padding: "0.3rem 0.5rem", fontSize: "0.8rem" }}
+                className="time-input"
                 value={h.opens_at}
                 onChange={(e) => setTime(h.day_of_week, "opens_at", e.target.value)}
               />
-              <span style={{ color: "var(--grey-light)" }}>to</span>
+              <span style={{ color: "var(--ink3)" }}>to</span>
               <input
                 type="time"
-                className="field-input"
-                style={{ width: 110, padding: "0.3rem 0.5rem", fontSize: "0.8rem" }}
+                className="time-input"
                 value={h.closes_at}
                 onChange={(e) => setTime(h.day_of_week, "closes_at", e.target.value)}
               />
@@ -77,7 +76,7 @@ export function BusinessHoursEditor({ initialHours }: { initialHours: DayRow[] }
         </div>
       ))}
       <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: "0.8rem" }}>
-        <button className="btn btn-pink btn-sm" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save Hours"}</button>
+        <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save hours"}</button>
         {msg && <span style={{ fontSize: "0.78rem", color: "var(--grey-mid)" }}>{msg}</span>}
       </div>
       {warnings.length > 0 && (

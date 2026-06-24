@@ -23,11 +23,27 @@ export default async function BusinessHoursPage() {
   });
 
   return (
-    <AdminShell title="Business Hours" eyebrow="Admin / Studio">
-      <div className="card" style={{ maxWidth: 560 }}>
-        <div className="card-header"><span className="card-title" style={{ fontSize: "1rem" }}>Weekly Hours</span></div>
-        <div className="card-body">
-          <BusinessHoursEditor initialHours={byDay} />
+    <AdminShell title="Business Hours" eyebrow="Business">
+      <div className="two-col">
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="card">
+            <div className="card-hdr"><span className="card-hdr-title">Weekly Schedule</span></div>
+            <div className="card-body">
+              <BusinessHoursEditor initialHours={byDay} />
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="card">
+            <div className="card-hdr"><span className="card-hdr-title">Booking Settings</span></div>
+            <div className="card-body">
+              <div className="f-row"><label className="f-label">Minimum booking notice</label><select className="f-input f-select" defaultValue="48 hours"><option>48 hours</option><option>24 hours</option><option>72 hours</option><option>1 week</option></select></div>
+              <div className="f-row"><label className="f-label">Intake form expiration</label><select className="f-input f-select" defaultValue="6 months"><option>6 months</option><option>3 months</option><option>12 months</option><option>Never</option></select></div>
+              <div className="f-row"><label className="f-label">Deposit amount</label><select className="f-input f-select" defaultValue="20% of service"><option>20% of service</option><option>Flat $50</option><option>Flat $100</option><option>No deposit</option></select></div>
+              <div className="f-row"><label className="f-label">Payment processor</label><input className="f-input" value="Square" readOnly /></div>
+              <div className="f-row" style={{ marginBottom: 0 }}><label className="f-label">Cancellation window</label><select className="f-input f-select" defaultValue="24 hours"><option>24 hours</option><option>48 hours</option><option>72 hours</option></select></div>
+            </div>
+          </div>
         </div>
       </div>
     </AdminShell>

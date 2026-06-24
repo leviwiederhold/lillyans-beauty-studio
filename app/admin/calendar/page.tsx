@@ -22,12 +22,14 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   const blockedTimes = (blockedRes?.data || []) as { id: string; starts_at: string; ends_at: string; reason?: string }[];
 
   return (
-    <AdminShell title="Calendar" eyebrow="Admin / Calendar">
-      <div className="admin-filter-links" style={{ marginBottom: "1rem" }}>
-        <a href="/admin/calendar">All</a>
+    <AdminShell title="Calendar" eyebrow="Schedule">
+      <div className="filter-row">
+        <a className={`filter-pill${!params.status ? " active" : ""}`} href="/admin/calendar">Week view</a>
         {["pending", "pending_admin_confirmation", "confirmed", "completed", "cancelled"].map((s) => (
-          <a key={s} href={`/admin/calendar?status=${s}`}>{s}</a>
+          <a className={`filter-pill${params.status === s ? " active" : ""}`} key={s} href={`/admin/calendar?status=${s}`}>{s.replaceAll("_", " ")}</a>
         ))}
+        <div style={{ flex: 1 }} />
+        <a className="btn btn-secondary" href="/admin/blocked-times"><i className="ti ti-ban" style={{ fontSize: 13, marginRight: 5 }} />Block time</a>
       </div>
       <AdminCalendarView bookings={bookings} blockedTimes={blockedTimes} />
     </AdminShell>

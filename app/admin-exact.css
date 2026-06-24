@@ -1,0 +1,51 @@
+/* Exact admin UI parity additions from the uploaded Lillyan admin HTML source. */
+.admin-shell .f-row{margin-bottom:14px}
+.admin-shell .f-row:last-child{margin-bottom:0}
+.admin-shell .f-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.admin-shell .f-textarea{resize:vertical;min-height:70px;line-height:1.5}
+.admin-shell .f-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a08080' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.admin-shell .form-q{padding:10px 0;border-bottom:1px solid var(--admin-border)}
+.admin-shell .form-q:last-child{border-bottom:none}
+.admin-shell .form-q-label{font-size:11px;color:var(--ink3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em}
+.admin-shell .form-q-val{font-size:13px;color:var(--ink)}
+.admin-shell .form-q-val.yes{color:var(--amber)}
+.admin-shell .form-q-val.no{color:var(--ink3)}
+.admin-shell .cb-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.admin-shell .cb-tag{padding:2px 8px;background:var(--admin-bg);border:1px solid var(--admin-border2);border-radius:5px;font-size:11px;color:var(--ink2)}
+.admin-shell .sched-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--admin-border)}
+.admin-shell .sched-row:last-child{border-bottom:none}
+.admin-shell .sched-day{width:90px;font-size:13px;font-weight:500;color:var(--ink);flex-shrink:0}
+.admin-shell .sched-time{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2)}
+.admin-shell .time-input{padding:5px 10px;border:1px solid var(--admin-border2);border-radius:7px;font-family:var(--fs-sans);font-size:13px;color:var(--ink);background:var(--admin-bg2);outline:none;width:88px}
+.admin-shell .time-input:focus{border-color:var(--rose)}
+.admin-shell .sched-closed{font-size:12px;color:var(--ink3)}
+.admin-shell .gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0}
+.admin-shell .gal-card{border-radius:10px;overflow:hidden;border:1px solid var(--admin-border);aspect-ratio:1;background:var(--rose-light);display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer}
+.admin-shell .gal-card i{font-size:32px;color:var(--rose-mid)}
+.admin-shell .gal-card:hover .gal-overlay{opacity:1}
+.admin-shell .gal-overlay{position:absolute;inset:0;background:rgba(44,34,32,.55);display:flex;align-items:center;justify-content:center;gap:10px;opacity:0;transition:opacity .2s}
+.admin-shell .gal-overlay button{width:32px;height:32px;border-radius:50%;background:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.admin-shell .svc-table-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--admin-border)}
+.admin-shell .svc-table-row:last-child{border-bottom:none}
+.admin-shell .svc-table-row:hover{background:var(--admin-bg)}
+.admin-shell .svc-name-col{flex:1;min-width:0}
+.admin-shell .svc-name-col .svc-name{font-size:13px;font-weight:500;color:var(--ink)}
+.admin-shell .svc-name-col .svc-cat{font-size:11px;color:var(--ink3)}
+.admin-shell .svc-col{width:70px;text-align:right;font-size:13px;color:var(--ink2)}
+.admin-shell .svc-col.price{color:var(--rose);font-family:var(--fs-serif);font-size:15px}
+.admin-shell .svc-actions{display:flex;gap:6px;flex-shrink:0}
+.admin-shell .icon-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--admin-border2);background:var(--admin-bg2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink2);font-size:14px}
+.admin-shell .icon-btn:hover{border-color:var(--rose);color:var(--rose)}
+.admin-shell .modal-backdrop{position:fixed;inset:0;background:rgba(44,34,32,.35);z-index:100;display:flex;align-items:center;justify-content:center}
+.admin-shell .modal{background:var(--admin-bg2);border-radius:14px;width:480px;max-width:94vw;max-height:86vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(44,34,32,.15)}
+.admin-shell .modal-hdr{padding:18px 20px;border-bottom:1px solid var(--admin-border);display:flex;align-items:center;justify-content:space-between}
+.admin-shell .modal-title{font-family:var(--fs-serif);font-size:18px;font-weight:400}
+.admin-shell .modal-title em{font-style:italic;color:var(--rose)}
+.admin-shell .modal-close{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:20px}
+.admin-shell .modal-close:hover{color:var(--rose)}
+.admin-shell .modal-body{padding:18px 20px;overflow-y:auto;flex:1}
+.admin-shell .modal-footer{padding:14px 20px;border-top:1px solid var(--admin-border);display:flex;gap:8px;justify-content:flex-end}
+.admin-shell .btn-danger{background:#fef2f2;border:1px solid #fcd;color:#c0392b}
+.admin-shell code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;background:var(--admin-bg);padding:2px 6px;border-radius:4px}
+@media(max-width:900px){.admin-shell .gallery-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.admin-shell .gallery-grid{grid-template-columns:repeat(2,1fr)}.admin-shell .f-grid2{grid-template-columns:1fr}.admin-shell .sched-row{align-items:flex-start;flex-direction:column;gap:8px}.admin-shell .sched-day{width:auto}}

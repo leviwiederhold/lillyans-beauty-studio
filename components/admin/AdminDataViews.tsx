@@ -44,7 +44,7 @@ export function EmptyState({ title, subtitle = "Live data will appear here as so
 
 export function StatusBadge({ status }: { status?: string | null }) {
   const value = String(status || "new");
-  const cls = value.includes("paid") || value === "confirmed" || value === "active" ? "confirmed" : value.includes("cancel") || value === "denied" ? "cancelled" : value.includes("complete") ? "completed" : value.includes("review") ? "review" : value.includes("missing") ? "missing" : value.includes("new") ? "new" : "pending";
+  const cls = value.includes("paid") || value === "confirmed" || value === "active" || value === "waived" ? "confirmed" : value.includes("cancel") || value === "denied" || value === "past_due" ? "cancelled" : value.includes("complete") ? "completed" : value.includes("review") ? "review" : value.includes("missing") ? "missing" : value.includes("new") ? "new" : "pending";
   return <span className={`badge ${cls}`}>{value.replaceAll("_", " ")}</span>;
 }
 

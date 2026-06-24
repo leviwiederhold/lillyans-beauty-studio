@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./admin-exact.css";
 
 export const metadata: Metadata = {
   title: "Wedding Makeup & Permanent Makeup Artist in Cincinnati, Ohio | Lillyan's Beauty Studio",

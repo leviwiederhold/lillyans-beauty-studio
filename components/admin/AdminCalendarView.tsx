@@ -99,8 +99,10 @@ export function AdminCalendarView({
   }
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: selected ? "1fr 320px" : "1fr", gap: "1rem", alignItems: "start" }}>
-      <div className="admin-card" style={{ padding: "1rem" }}>
+    <div className="two-col">
+      <div className="card" style={{ overflow: "hidden" }}>
+        <div className="card-hdr"><span className="card-hdr-title">Upcoming Calendar</span></div>
+        <div className="card-body">
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
@@ -121,51 +123,32 @@ export function AdminCalendarView({
           allDaySlot={false}
         />
         {message && <p className="admin-message" style={{ marginTop: "0.5rem" }}>{message}</p>}
+        </div>
       </div>
 
-      {selected && (
-        <div className="admin-card" style={{ padding: "1.25rem", position: "sticky", top: "1rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-            <h3 style={{ margin: 0, fontSize: "1rem" }}>Booking Detail</h3>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {selected ? (
+        <div className="card" style={{ position: "sticky", top: "1rem" }}>
+          <div className="card-hdr">
+            <span className="card-hdr-title">Booking Detail</span>
             <button
               onClick={() => setSelected(null)}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "var(--grey-mid)" }}
+              className="modal-close"
               aria-label="Close"
-            >×</button>
+            ><i className="ti ti-x" /></button>
           </div>
-          <dl style={{ fontSize: "0.82rem", display: "grid", gridTemplateColumns: "auto 1fr", gap: "0.3rem 0.75rem" }}>
-            <dt style={{ color: "var(--grey-mid)" }}>Service</dt>
-            <dd>{String(selected.service_type || "—")}</dd>
-            <dt style={{ color: "var(--grey-mid)" }}>Client</dt>
-            <dd>{String(selected.client_name || "—")}</dd>
-            <dt style={{ color: "var(--grey-mid)" }}>Email</dt>
-            <dd style={{ wordBreak: "break-all" }}>{String(selected.email || "—")}</dd>
-            <dt style={{ color: "var(--grey-mid)" }}>Phone</dt>
-            <dd>{String(selected.phone || "—")}</dd>
-            <dt style={{ color: "var(--grey-mid)" }}>Date</dt>
-            <dd>{selected.starts_at ? new Date(String(selected.starts_at)).toLocaleString() : "—"}</dd>
-            <dt style={{ color: "var(--grey-mid)" }}>Status</dt>
-            <dd>
-              <span style={{
-                display: "inline-block",
-                padding: "0.1rem 0.5rem",
-                borderRadius: 4,
-                fontSize: "0.75rem",
-                background: STATUS_COLORS[String(selected.status)] ?? "#e5e7eb",
-                color: "#fff",
-              }}>
-                {String(selected.status || "—")}
-              </span>
-            </dd>
-            {selected.notes ? <><dt style={{ color: "var(--grey-mid)" }}>Notes</dt><dd>{String(selected.notes)}</dd></> : null}
-            {selected.internal_notes ? <><dt style={{ color: "var(--grey-mid)" }}>Internal</dt><dd>{String(selected.internal_notes)}</dd></> : null}
-          </dl>
+          <div className="card-body">
+            <div className="form-q"><div className="form-q-label">Service</div><div className="form-q-val">{String(selected.service_type || "—")}</div></div>
+            <div className="form-q"><div className="form-q-label">Client</div><div className="form-q-val">{String(selected.client_name || "—")} · {String(selected.email || "—")} · {String(selected.phone || "—")}</div></div>
+            <div className="form-q"><div className="form-q-label">Date & Time</div><div className="form-q-val">{selected.starts_at ? new Date(String(selected.starts_at)).toLocaleString() : "—"}</div></div>
+            <div className="form-q"><div className="form-q-label">Status</div><div className="form-q-val">{String(selected.status || "—").replaceAll("_", " ")}</div></div>
+            {selected.notes ? <div className="form-q"><div className="form-q-label">Notes</div><div className="form-q-val">{String(selected.notes)}</div></div> : null}
+            {selected.internal_notes ? <div className="form-q"><div className="form-q-label">Internal</div><div className="form-q-val">{String(selected.internal_notes)}</div></div> : null}
           <div style={{ marginTop: "1rem", display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
             {["confirmed", "completed", "cancelled"].map((s) => (
               <button
                 key={s}
-                className="btn btn-sm btn-outline"
-                style={{ fontSize: "0.78rem" }}
+                className="btn btn-secondary"
                 onClick={() => updateStatus(s)}
                 disabled={selected.status === s}
               >
@@ -173,8 +156,23 @@ export function AdminCalendarView({
               </button>
             ))}
           </div>
+          </div>
         </div>
-      )}
+        ) : (
+          <div className="card">
+            <div className="card-hdr"><span className="card-hdr-title">Upcoming Appointments</span></div>
+            <div className="card-body">
+              {bookings.slice(0, 5).map((booking) => (
+                <div className="appt-row" key={String(booking.id)}>
+                  <div className="appt-time">{booking.starts_at ? new Date(String(booking.starts_at)).toLocaleDateString("en-US", { weekday: "short" }) : "TBD"}</div>
+                  <div className={`appt-dot ${booking.status === "confirmed" ? "confirmed" : "pending"}`} />
+                  <div className="appt-info"><div className="appt-name">{String(booking.client_name || "Client")}</div><div className="appt-svc">{String(booking.service_type || "Appointment")}</div></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

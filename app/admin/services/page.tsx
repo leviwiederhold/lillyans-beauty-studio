@@ -1,4 +1,5 @@
 import { AdminShell } from "@/components/admin/AdminShell";
+import { EmptyState } from "@/components/admin/AdminDataViews";
 import { requireAdmin } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
@@ -11,67 +12,49 @@ export default async function AdminServicesPage() {
   ]);
   const services = servicesRes?.data || [];
   const categories = categoriesRes?.data || [];
+  const groups = categories.length > 0
+    ? categories.map((c) => ({
+      name: c.name,
+      rows: services.filter((s) => s.service_categories?.name === c.name || s.category_id === c.id)
+    }))
+    : [{ name: "Services", rows: services }];
 
   return (
-    <AdminShell title="Services & Pricing" eyebrow="Admin / Store">
-      <div className="card" style={{ marginBottom: "1rem" }}>
-        <div className="card-header">
-          <span className="card-title" style={{ fontSize: "1rem" }}>All Services ({services.length})</span>
-        </div>
-        <div className="card-body" style={{ padding: 0 }}>
-          {services.length === 0 ? (
-            <p style={{ padding: "1rem", fontSize: "0.82rem", color: "var(--grey-mid)" }}>No services yet.</p>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Service</th>
-                  <th>Category</th>
-                  <th>Total</th>
-                  <th>Duration</th>
-                  <th>Deposit</th>
-                  <th>Intake</th>
-                  <th>Active</th>
-                </tr>
-              </thead>
-              <tbody>
-                {services.map((s) => (
-                  <tr key={s.id}>
-                    <td>
-                      <div style={{ fontWeight: 500 }}>{s.name}</div>
-                      {s.description && <div style={{ fontSize: "0.72rem", color: "var(--grey-mid)" }}>{String(s.description).slice(0, 60)}</div>}
-                    </td>
-                    <td>{s.service_categories?.name || "—"}</td>
-                    <td>{s.service_total ? `$${(s.service_total / 100).toFixed(0)}` : "—"}</td>
-                    <td>{s.duration_minutes} min</td>
-                    <td>{s.requires_deposit ? <span className="badge badge-amber">Required</span> : <span className="badge badge-grey">None</span>}</td>
-                    <td>{s.requires_intake ? <span className="badge badge-pink">{s.intake_type || "Yes"}</span> : <span className="badge badge-grey">No</span>}</td>
-                    <td>{s.is_active ? <span className="badge badge-green">Active</span> : <span className="badge badge-grey">Hidden</span>}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+    <AdminShell title="Services" eyebrow="Business">
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="filter-pill active">All</div>
+        {categories.slice(0, 5).map((c) => <div className="filter-pill" key={c.id}>{c.name}</div>)}
+        <div style={{ flex: 1 }} />
+        <button className="btn btn-primary" disabled><i className="ti ti-plus" style={{ fontSize: 13, marginRight: 5 }} />Add service</button>
       </div>
-
       <div className="card">
-        <div className="card-header"><span className="card-title" style={{ fontSize: "1rem" }}>Categories ({categories.length})</span></div>
-        <div className="card-body" style={{ padding: 0 }}>
-          <table className="data-table">
-            <thead><tr><th>Category</th><th>Description</th><th>Order</th><th>Active</th></tr></thead>
-            <tbody>
-              {categories.map((c) => (
-                <tr key={c.id}>
-                  <td>{c.name}</td>
-                  <td style={{ color: "var(--grey-mid)" }}>{String(c.description || "—")}</td>
-                  <td>{c.sort_order}</td>
-                  <td>{c.is_active ? <span className="badge badge-green">Active</span> : <span className="badge badge-grey">Hidden</span>}</td>
-                </tr>
+        {services.length === 0 ? (
+          <EmptyState title="No services yet" subtitle="Services and durations will appear here after they are added." icon="scissors" />
+        ) : (
+          groups.map((group) => group.rows.length > 0 && (
+            <div key={group.name}>
+              <div style={{ padding: "10px 16px", background: "var(--admin-bg)", borderBottom: "1px solid var(--admin-border)", fontSize: 10, fontWeight: 500, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ink3)" }}>{group.name}</div>
+              {group.rows.map((s) => (
+                <div className="svc-table-row" key={s.id}>
+                  <div className="svc-name-col">
+                    <div className="svc-name">{s.name}</div>
+                    <div className="svc-cat">
+                      {s.duration_minutes || 60} min
+                      {s.requires_deposit ? " · Deposit required" : ""}
+                      {s.requires_intake ? " · Intake required" : ""}
+                    </div>
+                  </div>
+                  <div className="svc-col price">{s.service_total ? `$${(Number(s.service_total) / 100).toFixed(0)}` : "—"}</div>
+                  <div className={`toggle${s.is_active ? " on" : ""}`} style={{ margin: "0 8px" }} aria-label={s.is_active ? "Active" : "Inactive"} />
+                  <div className="svc-actions">
+                    <button className="icon-btn" aria-label="Edit service"><i className="ti ti-edit" /></button>
+                    <button className="icon-btn" aria-label="Delete service"><i className="ti ti-trash" /></button>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          ))
+        )}
       </div>
     </AdminShell>
   );
