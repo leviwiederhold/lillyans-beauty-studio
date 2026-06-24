@@ -56,6 +56,8 @@ export function AdminForms({ settings, gallery, codes, memberships }: { settings
           <label>Service duration settings JSON<textarea name="service_durations" defaultValue={JSON.stringify(settings?.service_durations || {}, null, 2)} placeholder={'{"Wedding Makeup":120}' }></textarea></label>
           <label>Deposit amount settings JSON<textarea name="deposit_amounts" defaultValue={JSON.stringify(settings?.deposit_amounts || {}, null, 2)} placeholder={'{"Wedding Makeup":5000}' }></textarea></label>
           <label>Auto-confirm valid gift card bookings<select name="gift_card_auto_confirm" defaultValue={settings?.gift_card_auto_confirm ? "true" : "false"}><option value="false">No</option><option value="true">Yes</option></select></label>
+          <label>Minimum booking notice (hours)<input name="booking_minimum_notice_hours" type="number" min="0" max="720" defaultValue={settings?.booking_minimum_notice_hours ?? 48} placeholder="48" /></label>
+          <label>Intake form expiration (months)<input name="intake_expiration_months" type="number" min="0" max="60" defaultValue={settings?.intake_expiration_months ?? 6} placeholder="6" /></label>
           <label>Booking URL<input name="booking_url" defaultValue={settings?.booking_url || ""} placeholder="https://..." /></label>
           <label>Gift Card URL<input name="gift_card_url" defaultValue={settings?.gift_card_url || ""} placeholder="https://..." /></label>
           <button className="btn-primary">Save Hours</button>

@@ -20,6 +20,10 @@ export function GiftCardForm() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [msg, setMsg] = useState("");
 
+  // Inquiry tab: recipient + delivery state (drives conditional fields)
+  const [recipientType, setRecipientType] = useState<"myself" | "someone_else">("myself");
+  const [deliveryMethod, setDeliveryMethod] = useState<"email" | "ship" | "pickup">("email");
+
   // Buy online state
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [recipientEmail, setRecipientEmail] = useState("");
@@ -49,14 +53,34 @@ export function GiftCardForm() {
   }
 
   async function submitInquiry(fd: FormData) {
+    // Honeypot: real users never fill this hidden field; bots do.
+    if (String(fd.get("company") || "").trim()) { setStatus("success"); return; }
     setStatus("loading"); setMsg("");
+    const s = (k: string) => String(fd.get(k) || "").trim();
+    const purchaserName = s("purchaser_name");
     const payload = {
-      name: `${fd.get("first_name")} ${fd.get("last_name")}`.trim(),
-      email: fd.get("email"),
-      phone: fd.get("phone"),
-      occasion: fd.get("occasion"),
-      occasion_detail: fd.get("occasion_detail"),
-      message: fd.get("message"),
+      // Top-level fields the API/admin already understand:
+      name: purchaserName,
+      email: s("purchaser_email"),
+      phone: s("purchaser_phone"),
+      occasion: s("occasion"),
+      occasion_detail: s("occasion_detail"),
+      message: s("message"),
+      // Rich detail saved to contact_inquiries.details + emailed to Lilly:
+      details: {
+        recipient_type: recipientType,
+        purchaser: { name: purchaserName, email: s("purchaser_email"), phone: s("purchaser_phone") },
+        recipient: recipientType === "someone_else"
+          ? { name: s("recipient_name"), email: s("recipient_email"), phone: s("recipient_phone") }
+          : null,
+        amount: s("amount"),
+        delivery_method: deliveryMethod,
+        shipping: deliveryMethod === "ship"
+          ? { name: s("ship_name"), street: s("ship_street"), city: s("ship_city"), state: s("ship_state"), zip: s("ship_zip") }
+          : null,
+        preferred_contact: s("preferred_contact"),
+        notes: s("notes"),
+      },
     };
     try {
       const res = await fetch("/api/gift-card-inquiry", {
@@ -169,32 +193,77 @@ export function GiftCardForm() {
 
         {tab === "inquiry" && (
           <form action={submitInquiry}>
-            <div className="g2" style={{ gap: "0.8rem" }}>
-              <div className="field-group">
-                <label className="field-label">First Name</label>
-                <input className="field-input" name="first_name" required placeholder="Jane" />
-              </div>
-              <div className="field-group">
-                <label className="field-label">Last Name</label>
-                <input className="field-input" name="last_name" placeholder="Smith" />
+            {/* Honeypot — visually hidden, must stay empty */}
+            <input type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true"
+              style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }} />
+
+            {/* Who is this for */}
+            <div className="field-group">
+              <label className="field-label">Who is this gift card for?</label>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                {([["myself", "Myself"], ["someone_else", "Someone else"]] as const).map(([val, label]) => (
+                  <button type="button" key={val}
+                    onClick={() => setRecipientType(val)}
+                    style={{
+                      flex: 1, padding: "0.5rem", borderRadius: 8,
+                      border: `1.5px solid ${recipientType === val ? "var(--pink-dark)" : "var(--border)"}`,
+                      background: recipientType === val ? "var(--pink-light)" : "#fff",
+                      fontFamily: "inherit", fontSize: "0.85rem", cursor: "pointer", color: "var(--black)",
+                      fontWeight: recipientType === val ? 600 : 400,
+                    }}>{label}</button>
+                ))}
               </div>
             </div>
+
+            {/* Purchaser */}
             <div className="g2" style={{ gap: "0.8rem" }}>
               <div className="field-group">
-                <label className="field-label">Email</label>
-                <input className="field-input" name="email" type="email" required placeholder="you@example.com" />
+                <label className="field-label">Your Name</label>
+                <input className="field-input" name="purchaser_name" required placeholder="Jane Smith" />
               </div>
               <div className="field-group">
-                <label className="field-label">Phone (optional)</label>
-                <input className="field-input" name="phone" type="tel" placeholder="(513) 555-0100" />
+                <label className="field-label">Your Email</label>
+                <input className="field-input" name="purchaser_email" type="email" required placeholder="you@example.com" />
               </div>
             </div>
             <div className="field-group">
-              <label className="field-label">Occasion</label>
-              <select className="field-input" name="occasion" required value={occasion} onChange={(e) => setOccasion(e.target.value)}>
-                <option value="">Select an occasion…</option>
-                {OCCASIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
+              <label className="field-label">Your Phone (optional)</label>
+              <input className="field-input" name="purchaser_phone" type="tel" placeholder="(513) 555-0100" />
+            </div>
+
+            {/* Recipient (only if for someone else) */}
+            {recipientType === "someone_else" && (
+              <>
+                <div className="field-group">
+                  <label className="field-label">Recipient Name</label>
+                  <input className="field-input" name="recipient_name" required placeholder="Recipient's full name" />
+                </div>
+                <div className="g2" style={{ gap: "0.8rem" }}>
+                  <div className="field-group">
+                    <label className="field-label">Recipient Email (optional)</label>
+                    <input className="field-input" name="recipient_email" type="email" placeholder="recipient@example.com" />
+                  </div>
+                  <div className="field-group">
+                    <label className="field-label">Recipient Phone (optional)</label>
+                    <input className="field-input" name="recipient_phone" type="tel" placeholder="(513) 555-0100" />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Amount + occasion */}
+            <div className="g2" style={{ gap: "0.8rem" }}>
+              <div className="field-group">
+                <label className="field-label">Gift Card Amount</label>
+                <input className="field-input" name="amount" placeholder="$100" />
+              </div>
+              <div className="field-group">
+                <label className="field-label">Occasion</label>
+                <select className="field-input" name="occasion" required value={occasion} onChange={(e) => setOccasion(e.target.value)}>
+                  <option value="">Select an occasion…</option>
+                  {OCCASIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
             </div>
             {occasion === "Other" && (
               <div className="field-group">
@@ -202,9 +271,57 @@ export function GiftCardForm() {
                 <textarea className="field-input" name="occasion_detail" rows={2} placeholder="Tell us more…" />
               </div>
             )}
+
+            {/* Delivery method */}
             <div className="field-group">
-              <label className="field-label">Message / Special Requests (optional)</label>
-              <textarea className="field-input" name="message" rows={3} placeholder="Any notes for Lilly about the gift card…" />
+              <label className="field-label">How should we deliver the gift card?</label>
+              <select className="field-input" value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value as "email" | "ship" | "pickup")}>
+                <option value="email">Email to recipient</option>
+                <option value="ship">Ship / mail a physical gift card</option>
+                <option value="pickup">I will pick it up</option>
+              </select>
+            </div>
+
+            {/* Shipping address (only if shipping) */}
+            {deliveryMethod === "ship" && (
+              <>
+                <div className="field-group">
+                  <label className="field-label">Ship To (name)</label>
+                  <input className="field-input" name="ship_name" required placeholder="Recipient name" />
+                </div>
+                <div className="field-group">
+                  <label className="field-label">Street Address</label>
+                  <input className="field-input" name="ship_street" required placeholder="123 Main St" />
+                </div>
+                <div className="g2" style={{ gap: "0.8rem" }}>
+                  <div className="field-group">
+                    <label className="field-label">City</label>
+                    <input className="field-input" name="ship_city" required placeholder="Fayetteville" />
+                  </div>
+                  <div className="field-group">
+                    <label className="field-label">State</label>
+                    <input className="field-input" name="ship_state" required placeholder="OH" />
+                  </div>
+                </div>
+                <div className="field-group">
+                  <label className="field-label">ZIP</label>
+                  <input className="field-input" name="ship_zip" required placeholder="45118" />
+                </div>
+              </>
+            )}
+
+            {/* Preferred contact + notes */}
+            <div className="field-group">
+              <label className="field-label">Preferred Contact Method</label>
+              <select className="field-input" name="preferred_contact" defaultValue="email">
+                <option value="email">Email</option>
+                <option value="phone">Phone call</option>
+                <option value="text">Text message</option>
+              </select>
+            </div>
+            <div className="field-group">
+              <label className="field-label">Special Message / Notes (optional)</label>
+              <textarea className="field-input" name="message" rows={3} placeholder="A message for the recipient, or any notes for Lilly…" />
             </div>
             {msg && <p style={{ fontSize: "0.78rem", color: "#9b1c31", marginBottom: "0.8rem" }}>{msg}</p>}
             <button className="btn btn-pink btn-full" disabled={status === "loading"}>

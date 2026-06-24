@@ -82,7 +82,13 @@ export const bookingColumns = [
   { key: "deposit_status", label: "Deposit" },
   { key: "remaining_balance", label: "Due In Person", render: (r: Row) => r.remaining_balance ? `$${(Number(r.remaining_balance) / 100).toFixed(2)}` : "" },
   { key: "gift_card_code", label: "Gift Card/Code" },
-  { key: "waiver_reason", label: "Waiver" }
+  { key: "waiver_reason", label: "Waiver" },
+  { key: "intake", label: "Intake", render: (r: Row) => {
+    const f = r.client_forms;
+    if (!f) return r.client_form_id ? "Linked" : "—";
+    const when = f.last_reviewed_at || f.submitted_at;
+    return when ? `Current · ${formatDate(when)}` : "Current";
+  } }
 ];
 
 export const membershipColumns = [

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
-import { generateSlots, easternDayBounds } from "@/lib/availability";
+import { generateSlots, easternDayBounds, meetsMinimumNotice } from "@/lib/availability";
 import { missingForms } from "@/lib/intake";
 import { bookingRequestSchema } from "@/lib/validation";
 import { notifyAdmin, notifyClient } from "@/lib/notifications";
@@ -39,7 +39,24 @@ export async function POST(request: Request) {
   const service = await supabase.from("services").select("*, service_categories(name)").eq("id", data.service_id).eq("is_active", true).single();
   if (service.error) return NextResponse.json({ error: "Service not found." }, { status: 404 });
 
+  // Studio-configurable rules.
+  const settings = await supabase.from("business_settings")
+    .select("gift_card_auto_confirm, booking_minimum_notice_hours, intake_expiration_months")
+    .eq("id", 1).maybeSingle();
+  const minNoticeHours = Number(settings.data?.booking_minimum_notice_hours ?? 48);
+  const intakeExpirationMonths = Number(settings.data?.intake_expiration_months ?? 6);
+
   const starts = new Date(data.starts_at);
+
+  // Lead-time rule: clients may not self-book inside the minimum-notice window.
+  // (Admins create short-notice bookings via /api/admin/bookings, which is exempt.)
+  if (!meetsMinimumNotice(starts, minNoticeHours)) {
+    return NextResponse.json(
+      { error: `Appointments must be booked at least ${minNoticeHours} hours in advance.` },
+      { status: 400 }
+    );
+  }
+
   const date = data.starts_at.slice(0, 10);
   const { dayStart, dayEnd } = easternDayBounds(date);
   const [rules, bookings, blocked] = await Promise.all([
@@ -52,7 +69,8 @@ export async function POST(request: Request) {
     durationMinutes: service.data.duration_minutes,
     rules: rules.data || [],
     bookings: (bookings.data || []).filter((b) => b.starts_at && b.ends_at) as { starts_at: string; ends_at: string }[],
-    blockedTimes: blocked.data || []
+    blockedTimes: blocked.data || [],
+    minNoticeHours
   });
   if (!slots.includes(starts.toISOString())) return NextResponse.json({ error: "That time is no longer available." }, { status: 409 });
 
@@ -109,15 +127,20 @@ export async function POST(request: Request) {
 
   // Intake gate: intake/consent forms are submitted separately to /api/forms
   // (stored in client_forms), not in the booking payload. Verify the required
-  // forms for this service's category are actually on file for this user before
-  // allowing the booking.
+  // forms for this service's category are (a) on file and (b) current — either
+  // submitted or reviewed within the studio's expiration window. Capture the
+  // form that satisfies the booking so it can be linked.
+  let clientFormId: string | null = null;
   if (service.data.requires_intake) {
     const categoryName = (service.data.service_categories as { name?: string } | null)?.name ?? null;
     const onFile = await supabase
       .from("client_forms")
-      .select("form_type")
-      .eq("user_id", userData.user.id);
-    const onFileTypes = (onFile.data ?? []).map((f) => f.form_type as string);
+      .select("id, form_type, submitted_at, last_reviewed_at")
+      .eq("user_id", userData.user.id)
+      .order("submitted_at", { ascending: false });
+    const rows = onFile.data ?? [];
+    const onFileTypes = rows.map((f) => f.form_type as string);
+
     const missing = missingForms(categoryName, onFileTypes);
     if (missing.length > 0) {
       return NextResponse.json(
@@ -125,8 +148,28 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Currency: the most-recent submit/review of any required form must be within
+    // the expiration window.
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - intakeExpirationMonths);
+    const requiredRows = rows.filter((f) => onFileTypes.includes(f.form_type as string));
+    const freshness = (f: { submitted_at?: string | null; last_reviewed_at?: string | null }) =>
+      Math.max(
+        f.submitted_at ? new Date(f.submitted_at).getTime() : 0,
+        f.last_reviewed_at ? new Date(f.last_reviewed_at).getTime() : 0
+      );
+    const mostRecent = requiredRows.reduce((best, f) => Math.max(best, freshness(f)), 0);
+    if (mostRecent > 0 && mostRecent < cutoff.getTime()) {
+      return NextResponse.json(
+        { error: `Please review and confirm your intake information before booking — your forms are more than ${intakeExpirationMonths} months old.`, intakeOutdated: true },
+        { status: 400 }
+      );
+    }
+
+    // Link the most recently updated required form to this booking.
+    clientFormId = (requiredRows.slice().sort((a, b) => freshness(b) - freshness(a))[0]?.id as string) ?? null;
   }
-  const settings = await supabase.from("business_settings").select("gift_card_auto_confirm").eq("id", 1).maybeSingle();
 
   const ends = new Date(starts.getTime() + service.data.duration_minutes * 60000);
   const serviceTotal = Number(service.data.service_total || 0);
@@ -155,6 +198,7 @@ export async function POST(request: Request) {
     deposit_amount_cents: depositAmount || service.data.deposit_amount_cents || null,
     gift_card_code: code || null,
     gift_card_status: giftCardStatus,
+    client_form_id: clientFormId,
     notes: data.notes || null
   }).select("*").single();
   if (booking.error) {

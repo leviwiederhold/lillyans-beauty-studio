@@ -188,6 +188,8 @@ export const businessSettingsSchema = z.object({
   service_durations: z.string().trim().optional(),
   deposit_amounts: z.string().trim().optional(),
   gift_card_auto_confirm: z.coerce.boolean().optional(),
+  booking_minimum_notice_hours: z.coerce.number().int().min(0).max(720).optional(),
+  intake_expiration_months: z.coerce.number().int().min(0).max(60).optional(),
   booking_url: z.string().trim().url().optional().or(z.literal("")),
   gift_card_url: z.string().trim().url().optional().or(z.literal(""))
 });

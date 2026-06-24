@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const { supabase } = await requireAdmin();
   const params = await searchParams;
-  let query = supabase?.from("bookings").select("*, clients(first_name,last_name,email,phone)").order("starts_at", { ascending: false }).limit(200);
+  let query = supabase?.from("bookings").select("*, clients(first_name,last_name,email,phone), client_forms:client_form_id(form_type,submitted_at,last_reviewed_at)").order("starts_at", { ascending: false }).limit(200);
   if (params.status && params.status !== "all") query = query?.eq("status", params.status);
   const bookings = await query;
   const rows = bookings?.data || [];
