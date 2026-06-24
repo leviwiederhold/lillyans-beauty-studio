@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { validateGiftCertificateCode } from "@/lib/gift-certificates";
 
 // Simple in-memory rate limiter: 10 attempts per IP per minute
 const WINDOW_MS = 60_000;
@@ -28,15 +29,12 @@ export async function GET(req: NextRequest) {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return NextResponse.json({ valid: false, message: "Service unavailable." });
 
-  const { data } = await supabase
-    .from("gift_card_codes")
-    .select("id,code,is_active,allow_reuse,used_count,description")
-    .ilike("code", code)
-    .maybeSingle();
+  const result = await validateGiftCertificateCode(supabase, code);
+  if (!result.valid) return NextResponse.json({ valid: false, message: result.message });
 
-  if (!data) return NextResponse.json({ valid: false, message: "Code not found." });
-  if (!data.is_active) return NextResponse.json({ valid: false, message: "This code is no longer active." });
-  if (!data.allow_reuse && data.used_count > 0) return NextResponse.json({ valid: false, message: "This code has already been used." });
-
-  return NextResponse.json({ valid: true, code_id: data.id, message: data.description || "Code applied — deposit waived." });
+  return NextResponse.json({
+    valid: true,
+    code_id: result.code.id,
+    message: result.code.description || "Gift certificate applied. No deposit is due today."
+  });
 }

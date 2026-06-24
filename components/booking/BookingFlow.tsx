@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { ADDRESS } from "@/lib/constants";
 import { requiredFormsForCategory } from "@/lib/intake";
@@ -181,14 +182,14 @@ export function BookingFlow({
       const data = await res.json();
       if (data.valid) {
         setCodeStatus("valid");
-        setCodeMsg(data.message || "Code applied — deposit waived.");
+        setCodeMsg(data.message || "Gift certificate applied. No deposit is due today.");
       } else {
         setCodeStatus("invalid");
-        setCodeMsg(data.message || "Code not found or expired.");
+        setCodeMsg(data.message || "We couldn’t validate that code. Please check it or continue with the required deposit.");
       }
     } catch {
       setCodeStatus("invalid");
-      setCodeMsg("Could not verify code.");
+      setCodeMsg("We couldn’t validate that code. Please check it or continue with the required deposit.");
     }
   }
 
@@ -281,12 +282,12 @@ export function BookingFlow({
               </div>
             </div>
             <div style={{ marginTop: "1.5rem", display: "flex", gap: "0.6rem" }}>
-              <a href="/account/bookings" className="btn btn-pink btn-sm" style={{ textDecoration: "none" }}>
+              <Link href="/account/bookings" className="btn btn-pink btn-sm" style={{ textDecoration: "none" }}>
                 View My Bookings
-              </a>
-              <a href="/" className="btn btn-ghost btn-sm" style={{ textDecoration: "none" }}>
+              </Link>
+              <Link href="/" className="btn btn-ghost btn-sm" style={{ textDecoration: "none" }}>
                 Back to Studio
-              </a>
+              </Link>
             </div>
           </div>
       </div>
@@ -498,7 +499,7 @@ export function BookingFlow({
               <>
                 <div className="bk-step-eyebrow">Step 4 of 5</div>
                 <h2 className="bk-step-title">Gift Card or Code</h2>
-                <p className="bk-step-sub">Have a gift card or no-deposit code? Enter it below.</p>
+                <p className="bk-step-sub">Have a gift certificate or no-deposit code? Enter it below.</p>
 
                 <div className="card" style={{ maxWidth: 420 }}>
                   <div className="card-body">

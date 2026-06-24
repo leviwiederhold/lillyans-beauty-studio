@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { AppNav } from "@/components/AppNav";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
+import { BookingRescheduleForm } from "@/components/account/BookingRescheduleForm";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,9 @@ export default async function AccountBookingsPage() {
                       <div style={{ marginTop: "0.4rem", display: "flex", gap: "0.4rem" }}>
                         <span className={`badge ${b.status === "confirmed" ? "badge-green" : b.status === "cancelled" ? "badge-grey" : "badge-amber"}`}>{b.status}</span>
                         {b.deposit_status === "paid" && <span className="badge badge-amber">Deposit Paid</span>}
+                        {b.deposit_status === "waived" && <span className="badge badge-green">Deposit Waived</span>}
                       </div>
+                      <BookingRescheduleForm bookingId={b.id} depositStatus={b.deposit_status} />
                     </div>
                   </div>
                 );

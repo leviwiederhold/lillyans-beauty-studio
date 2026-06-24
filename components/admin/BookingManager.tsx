@@ -49,6 +49,8 @@ export function BookingManager({ rows }: { rows: Record<string, any>[] }) {
           <label>Deposit required<select name="deposit_required"><option value="true">true</option><option value="false">false</option></select></label>
           <label>Deposit status<input name="deposit_status" placeholder="pending, paid, waived..." /></label>
           <label>Deposit amount cents<input name="deposit_amount_cents" type="number" min="0" placeholder="2500" /></label>
+          <label>Gift certificate/no-deposit code<input name="gift_card_code" placeholder="Optional code to waive deposit" /></label>
+          <label>Waiver reason<select name="waiver_reason"><option value="">None</option><option value="gift_certificate">Gift certificate</option><option value="membership">Membership</option><option value="admin_override">Admin override</option><option value="service_no_deposit">Service no deposit</option></select></label>
           <label>Starts at<input name="starts_at" type="datetime-local" /></label>
           <label>Ends at<input name="ends_at" type="datetime-local" /></label>
           <label>Internal notes<textarea name="internal_notes" placeholder="Private admin-only notes"></textarea></label>

@@ -143,6 +143,10 @@ export function AdminForms({ settings, gallery, codes, memberships }: { settings
           <form action={(fd) => post("/api/admin/table", { table: "gift_card_codes", ...Object.fromEntries(fd.entries()), is_active: "true" })}>
             <label>Code<input name="code" required /></label>
             <label>Description<input name="description" /></label>
+            <label>Type<select name="type"><option value="gift_certificate">Gift certificate</option><option value="no_deposit">No-deposit code</option></select></label>
+            <label>Value cents<input name="value_cents" type="number" min="0" placeholder="Optional" /></label>
+            <label>Usage limit<input name="usage_limit" type="number" min="1" placeholder="1 for one-time" /></label>
+            <label>Expires at<input name="expires_at" type="date" /></label>
             <label>Allow reuse<select name="allow_reuse"><option value="false">No</option><option value="true">Yes</option></select></label>
             <button className="btn-primary">Add Code</button>
           </form>
