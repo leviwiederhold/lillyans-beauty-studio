@@ -1,5 +1,5 @@
 import { AdminShell } from "@/components/admin/AdminShell";
-import { SearchableClients } from "@/components/admin/AdminDataViews";
+import { SearchableClients } from "@/components/admin/AdminInteractiveViews";
 import { requireAdmin } from "@/lib/admin";
 import { OwnerTools } from "@/components/admin/OwnerTools";
 import { DataTable } from "@/components/admin/AdminDataViews";

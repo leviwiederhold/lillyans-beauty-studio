@@ -5,48 +5,36 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 function buildSidebar(unreviewedForms: number) {
   return [
     {
-      label: "Overview",
+      label: "Operations",
       links: [
-        { href: "/admin", label: "Dashboard", icon: "home", badge: 0 },
-        { href: "/admin/calendar", label: "Calendar", icon: "calendar", badge: 0 }
+        { href: "/admin", label: "Overview", icon: "layout-dashboard", badge: 0 },
+        { href: "/admin/calendar", label: "Calendar", icon: "calendar", badge: 0 },
+        { href: "/admin/bookings", label: "Bookings", icon: "notebook", badge: 0 },
+        { href: "/admin/clients", label: "Clients", icon: "users", badge: 0 },
+        { href: "/admin/intake-forms", label: "Intake Forms", icon: "clipboard-text", badge: unreviewedForms }
       ]
     },
     {
-      label: "Bookings",
+      label: "Business",
       links: [
-        { href: "/admin/bookings", label: "All Bookings", icon: "book", badge: 0 },
-        { href: "/admin/client-forms", label: "Intake Forms", icon: "clipboard", badge: unreviewedForms }
-      ]
-    },
-    {
-      label: "Clients",
-      links: [
-        { href: "/admin/clients", label: "Client List", icon: "users", badge: 0 },
-        { href: "/admin/memberships", label: "Memberships", icon: "star", badge: 0 }
-      ]
-    },
-    {
-      label: "Store",
-      links: [
-        { href: "/admin/services", label: "Services", icon: "tag", badge: 0 },
-        { href: "/admin/gift-card-inquiries", label: "Gift Card Inquiries", icon: "gift", badge: 0 },
-        { href: "/admin/gift-card-codes", label: "Gift Card Codes", icon: "code", badge: 0 }
-      ]
-    },
-    {
-      label: "Studio",
-      links: [
+        { href: "/admin/memberships", label: "Memberships", icon: "crown", badge: 0 },
+        { href: "/admin/services", label: "Services", icon: "scissors", badge: 0 },
         { href: "/admin/business-hours", label: "Business Hours", icon: "clock", badge: 0 },
         { href: "/admin/blocked-times", label: "Blocked Times", icon: "ban", badge: 0 },
-        { href: "/admin/gallery", label: "Gallery", icon: "image", badge: 0 },
-        { href: "/admin/settings", label: "Settings", icon: "settings", badge: 0 }
+        { href: "/admin/gift-cards", label: "Gift Cards", icon: "gift", badge: 0 }
+      ]
+    },
+    {
+      label: "Content",
+      links: [
+        { href: "/admin/gallery", label: "Gallery", icon: "photo", badge: 0 },
+        { href: "/admin/settings", label: "Website Settings", icon: "settings", badge: 0 }
       ]
     }
   ];
 }
 
 export async function AdminShell({ title, eyebrow, children }: { title: string; eyebrow?: string; children: React.ReactNode }) {
-  // Fetch unreviewed client forms count for sidebar badge
   const supabase = createSupabaseAdminClient();
   let unreviewedForms = 0;
   if (supabase) {
@@ -58,35 +46,50 @@ export async function AdminShell({ title, eyebrow, children }: { title: string; 
   }
   const SIDEBAR = buildSidebar(unreviewedForms);
   return (
-    <div style={{ minHeight: "100vh", background: "#f7f3f4" }}>
-      {/* Top bar */}
-      <div style={{ background: "var(--white)", borderBottom: "1px solid var(--border)", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 1.5rem", position: "sticky", top: 0, zIndex: 100 }}>
-        <Link href="/" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.1rem", fontWeight: 400, color: "var(--black)", textDecoration: "none" }}>
-          Lillyan&apos;s Beauty Studio
-          <span style={{ display: "block", fontFamily: "'Jost', sans-serif", fontSize: "0.55rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--grey-light)" }}>Admin</span>
-        </Link>
-        <Link href="/" className="btn btn-ghost btn-sm">View Site</Link>
-      </div>
-
-      <div className="admin-layout-new">
-        {/* Sidebar */}
-        <aside className="admin-sidebar-new">
+    <div className="admin-shell">
+      <nav className="sidebar">
+        <div className="sb-brand">
+          <Link href="/admin" className="sb-brand-name">Lillyan&apos;s <em>Beauty Studio</em></Link>
+          <div className="sb-brand-sub">Admin Portal</div>
+        </div>
+        <div className="sb-nav">
           {SIDEBAR.map((section) => (
-            <div key={section.label} className="sidebar-section">
-              <div className="sidebar-label">{section.label}</div>
+            <div key={section.label}>
+              <div className="sb-section-label">{section.label}</div>
               {section.links.map((link) => (
                 <AdminSidebarNav key={link.href} href={link.href} label={link.label} icon={link.icon} badge={link.badge} />
               ))}
             </div>
           ))}
-        </aside>
-
-        {/* Main content */}
-        <main className="admin-main-new">
-          <div style={{ marginBottom: "1.5rem" }}>
-            <p className="sec-label">{eyebrow || "Admin"}</p>
-            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.8rem", fontWeight: 300 }}>{title}</h1>
+        </div>
+        <div className="sb-footer">
+          <div className="sb-avatar">
+            <div className="sb-avatar-circle">L</div>
+            <div><div className="sb-avatar-name">Lilly</div><div className="sb-avatar-role">Studio Owner</div></div>
           </div>
+        </div>
+      </nav>
+      <div className="main">
+        <div className="topbar">
+          <div className="topbar-title">{title.includes("Admin") ? "Overview" : title}</div>
+          <div className="topbar-right">
+            <div className="tb-search"><span className="ti ti-search" aria-hidden="true" /><input placeholder="Search clients, bookings..." /></div>
+            <Link href="/" className="tb-btn" title="View site" aria-label="View site"><span className="ti ti-external-link" aria-hidden="true" /></Link>
+            <Link href="/admin/bookings" className="tb-add"><span className="ti ti-plus" aria-hidden="true" />Quick Add</Link>
+          </div>
+        </div>
+        <div className="mobile-admin-nav">
+          {SIDEBAR.flatMap((section) => section.links).map((link) => (
+            <AdminSidebarNav key={link.href} href={link.href} label={link.label} icon={link.icon} badge={link.badge} />
+          ))}
+        </div>
+        <main className="content">
+          {eyebrow && (
+            <div className="page-hdr">
+              <div className="page-eyebrow">{eyebrow}</div>
+              <div className="page-title">{title}</div>
+            </div>
+          )}
           {children}
         </main>
       </div>

@@ -1,5 +1,5 @@
 import { AdminShell } from "@/components/admin/AdminShell";
-import { FilterableForms } from "@/components/admin/AdminDataViews";
+import { FilterableForms } from "@/components/admin/AdminInteractiveViews";
 import { requireAdmin } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
