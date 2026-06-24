@@ -1,76 +1,72 @@
-"use client";
-
-import { useMemo, useState } from "react";
 import { formatDate, formatDateTime, fullName } from "@/lib/format";
 
 type Row = Record<string, any>;
 
-export function StatGrid({ stats }: { stats: { label: string; value: number | string }[] }) {
-  return <section className="admin-stats">{stats.map((s) => <div className="admin-stat" key={s.label}><strong>{s.value}</strong><span>{s.label}</span></div>)}</section>;
+const STAT_COLORS = ["rose", "amber", "green", "blue"];
+const STAT_ICONS = ["calendar-event", "clock-exclamation", "crown", "clipboard-list", "users"];
+
+export function StatGrid({ stats }: { stats: { label: string; value: number | string; delta?: string }[] }) {
+  return (
+    <section className="stat-grid">
+      {stats.map((s, index) => (
+        <div className="stat-card" key={s.label}>
+          <div className={`stat-icon ${STAT_COLORS[index % STAT_COLORS.length]}`}><i className={`ti ti-${STAT_ICONS[index % STAT_ICONS.length]}`} /></div>
+          <div className="stat-val">{s.value}</div>
+          <div className="stat-label">{s.label}</div>
+          {s.delta && <div className="stat-delta"><i className="ti ti-arrow-up" />{s.delta}</div>}
+        </div>
+      ))}
+    </section>
+  );
 }
 
 export function DataTable({ title, rows, columns }: { title?: string; rows: Row[]; columns: { key: string; label: string; render?: (row: Row) => React.ReactNode }[] }) {
   return (
-    <div className="admin-card">
-      {title && <h2>{title}</h2>}
-      {rows.length === 0 && <p className="admin-empty">No records yet.</p>}
+    <div className="card">
+      {title && <div className="card-hdr"><span className="card-hdr-title">{title}</span></div>}
+      {rows.length === 0 ? (
+        <EmptyState title="No records yet" icon="inbox" />
+      ) : (
       <div className="admin-table-wrap">
-        <table className="admin-table">
+        <table className="data-table">
           <thead><tr>{columns.map((c) => <th key={c.key}>{c.label}</th>)}</tr></thead>
           <tbody>{rows.map((row, i) => <tr key={String(row.id || i)}>{columns.map((c) => <td key={c.key}>{c.render ? c.render(row) : String(row[c.key] ?? "")}</td>)}</tr>)}</tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }
 
-export function SearchableClients({ clients }: { clients: Row[] }) {
-  const [query, setQuery] = useState("");
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase();
-    return clients.filter((c) => [fullName(c), c.email, c.phone, c.membership_status, c.services_used].join(" ").toLowerCase().includes(q));
-  }, [clients, query]);
-
-  return (
-    <div className="admin-card">
-      <div className="admin-card-head"><h2>Clients & Accounts</h2><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search clients..." /></div>
-      <DataTable rows={filtered} columns={[
-        { key: "name", label: "Name", render: (r) => fullName(r) },
-        { key: "email", label: "Email" },
-        { key: "phone", label: "Phone" },
-        { key: "services_used", label: "Services Used", render: (r) => (r.services_used || []).join(", ") },
-        { key: "intake_count", label: "Intake Forms" },
-        { key: "booking_count", label: "Bookings" },
-        { key: "membership_status", label: "Membership" }
-      ]} />
-    </div>
-  );
+export function EmptyState({ title, subtitle = "Live data will appear here as soon as it is available.", icon = "sparkles" }: { title: string; subtitle?: string; icon?: string }) {
+  return <div className="empty-state"><i className={`ti ti-${icon}`} /><div className="empty-title">{title}</div><div className="empty-sub">{subtitle}</div></div>;
 }
 
-export function FilterableForms({ forms }: { forms: Row[] }) {
-  const [query, setQuery] = useState("");
-  const [type, setType] = useState("");
-  const [openId, setOpenId] = useState<string | null>(null);
-  const types = Array.from(new Set(forms.map((f) => f.type).filter(Boolean)));
-  const filtered = forms.filter((f) => {
-    const client = f.clients || {};
-    const haystack = [f.type, f.service_label, f.signature, client.first_name, client.last_name, client.email, client.phone].join(" ").toLowerCase();
-    return (!type || f.type === type) && haystack.includes(query.toLowerCase());
-  });
+export function StatusBadge({ status }: { status?: string | null }) {
+  const value = String(status || "new");
+  const cls = value.includes("paid") || value === "confirmed" || value === "active" ? "confirmed" : value.includes("cancel") || value === "denied" ? "cancelled" : value.includes("complete") ? "completed" : value.includes("review") ? "review" : value.includes("missing") ? "missing" : value.includes("new") ? "new" : "pending";
+  return <span className={`badge ${cls}`}>{value.replaceAll("_", " ")}</span>;
+}
 
+export function AppointmentList({ title, rows, actionHref }: { title: string; rows: Row[]; actionHref?: string }) {
   return (
-    <section className="admin-card">
-      <div className="admin-card-head">
-        <h2>Intake Forms</h2>
-        <div className="admin-controls"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by client..." /><select value={type} onChange={(e) => setType(e.target.value)}><option value="">All service types</option>{types.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
+    <div className="card">
+      <div className="card-hdr"><span className="card-hdr-title">{title}</span>{actionHref && <a className="card-hdr-action" href={actionHref}>View all</a>}</div>
+      <div className="card-body">
+        {rows.length === 0 ? <EmptyState title="No appointments" icon="calendar-event" /> : rows.map((row) => {
+          const date = row.starts_at ? new Date(String(row.starts_at)) : null;
+          return (
+            <div className="appt-row" key={String(row.id)}>
+              <div className="appt-time">{date ? date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "TBD"}</div>
+              <div className={`appt-dot ${row.status === "confirmed" ? "confirmed" : row.status === "pending" ? "pending" : "new"}`} />
+              <div className="appt-info"><div className="appt-name">{row.client_name || fullName(row.clients) || row.email || "Client"}</div><div className="appt-svc">{row.service_type || row.subject || "Appointment"}</div></div>
+              <div className="appt-dur">{row.ends_at && row.starts_at ? `${Math.max(15, Math.round((new Date(String(row.ends_at)).getTime() - new Date(String(row.starts_at)).getTime()) / 60000))} min` : ""}</div>
+              <StatusBadge status={row.deposit_status === "paid" ? "paid" : row.status} />
+            </div>
+          );
+        })}
       </div>
-      <div className="admin-table-wrap">
-        <table className="admin-table">
-          <thead><tr><th>Client</th><th>Service</th><th>Submitted</th><th>Latest</th><th>Details</th></tr></thead>
-          <tbody>{filtered.map((f, index) => <tr key={f.id}><td>{fullName(f.clients)}<br />{f.clients?.email}</td><td>{f.service_label}</td><td>{formatDateTime(f.created_at)}</td><td>{index === 0 ? "Latest version" : ""}</td><td><button className="admin-link-button" onClick={() => setOpenId(openId === f.id ? null : f.id)}>View</button>{openId === f.id && <pre className="admin-json">{JSON.stringify(f.raw_payload || f.service_details || {}, null, 2)}</pre>}</td></tr>)}</tbody>
-        </table>
-      </div>
-    </section>
+    </div>
   );
 }
 
@@ -79,17 +75,17 @@ export const bookingColumns = [
   { key: "service_type", label: "Service Type" },
   { key: "client", label: "Client", render: (r: Row) => r.clients ? fullName(r.clients) : r.client_name || r.name || "" },
   { key: "starts_at", label: "Date/Time", render: (r: Row) => formatDateTime(r.starts_at || r.created_at) },
-  { key: "deposit_status", label: "Deposit" },
+  { key: "deposit_status", label: "Deposit", render: (r: Row) => <StatusBadge status={r.deposit_status} /> },
   { key: "remaining_balance", label: "Due In Person", render: (r: Row) => r.remaining_balance ? `$${(Number(r.remaining_balance) / 100).toFixed(2)}` : "" },
   { key: "gift_card_code", label: "Gift Card/Code" },
-  { key: "waiver_reason", label: "Waiver" }
+  { key: "status_badge", label: "Status", render: (r: Row) => <StatusBadge status={r.status} /> }
 ];
 
 export const membershipColumns = [
   { key: "client", label: "Client", render: (r: Row) => r.clients ? fullName(r.clients) : r.client_name || "" },
   { key: "email", label: "Email", render: (r: Row) => r.clients?.email || r.email || "" },
   { key: "plan_name", label: "Plan" },
-  { key: "status", label: "Status" },
+  { key: "status", label: "Status", render: (r: Row) => <StatusBadge status={r.status} /> },
   { key: "start_date", label: "Start", render: (r: Row) => formatDate(r.start_date) },
   { key: "renewal_date", label: "Renewal", render: (r: Row) => formatDate(r.renewal_date) },
   { key: "payment_status", label: "Payment" }
