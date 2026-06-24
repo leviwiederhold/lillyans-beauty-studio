@@ -4,11 +4,12 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getSafeNextPath, isAccountPath } from "@/lib/auth-roles";
 
 function SignupForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/account";
+  const next = getSafeNextPath(params.get("next"), "/account");
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -34,12 +35,12 @@ function SignupForm() {
       return;
     }
     if (data.session) {
-      await fetch("/api/account/profile", {
+      const profile = await fetch("/api/account/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
-      });
-      router.push(next);
+      }).then((res) => res.json()).catch(() => ({}));
+      router.push(profile?.is_admin || profile?.role === "admin" ? isAccountPath(next) ? "/admin" : next : next);
       router.refresh();
       return;
     }

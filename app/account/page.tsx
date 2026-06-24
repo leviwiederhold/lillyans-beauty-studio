@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { AppNav } from "@/components/AppNav";
 import { formatDate, formatDateTime, fullName } from "@/lib/format";
+import { ensureProfileForUser, isAdminProfile } from "@/lib/auth-roles";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,10 @@ export default async function AccountPage() {
   if (!data.user?.email) redirect("/login");
 
   const supabase = createSupabaseAdminClient();
+  if (supabase) {
+    const profile = await ensureProfileForUser(supabase, data.user);
+    if (isAdminProfile(profile)) redirect("/admin");
+  }
   const clientRes = await supabase?.from("clients").select("*").or(`profile_id.eq.${data.user.id},email.ilike.${data.user.email}`).limit(1).maybeSingle();
   const client = clientRes?.data;
 

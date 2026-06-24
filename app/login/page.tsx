@@ -4,11 +4,12 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getSafeNextPath, isAccountPath } from "@/lib/auth-roles";
 
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/account";
+  const next = getSafeNextPath(params.get("next"), "/account");
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -22,12 +23,16 @@ function LoginForm() {
       setMessage(error.message.includes("Email not confirmed") ? "Please confirm your email address before signing in." : error.message);
       return;
     }
-    await fetch("/api/account/profile", {
+    const profileRes = await fetch("/api/account/profile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
     });
-    router.push(next);
+    const profile = await profileRes.json().catch(() => ({}));
+    const destination = profile?.is_admin || profile?.role === "admin"
+      ? isAccountPath(next) ? "/admin" : next
+      : next;
+    router.push(destination);
     router.refresh();
   }
 
