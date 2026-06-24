@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
-import { generateSlots, easternDayBounds } from "@/lib/availability";
+import { assertBookingSlotAvailable } from "@/lib/booking-rules";
+import { markGiftCertificateUsed, validateGiftCertificateCode } from "@/lib/gift-certificates";
 import { missingForms } from "@/lib/intake";
 import { bookingRequestSchema } from "@/lib/validation";
 import { notifyAdmin, notifyClient } from "@/lib/notifications";
@@ -39,66 +40,21 @@ export async function POST(request: Request) {
   const service = await supabase.from("services").select("*, service_categories(name)").eq("id", data.service_id).eq("is_active", true).single();
   if (service.error) return NextResponse.json({ error: "Service not found." }, { status: 404 });
 
-  const starts = new Date(data.starts_at);
-  const date = data.starts_at.slice(0, 10);
-  const { dayStart, dayEnd } = easternDayBounds(date);
-  const [rules, bookings, blocked] = await Promise.all([
-    supabase.from("availability_rules").select("*").eq("is_active", true),
-    supabase.from("bookings").select("starts_at,ends_at").in("status", ["pending", "confirmed"]).gte("starts_at", dayStart).lte("starts_at", dayEnd),
-    supabase.from("blocked_times").select("starts_at,ends_at").lte("starts_at", dayEnd).gte("ends_at", dayStart)
-  ]);
-  const slots = generateSlots({
-    date,
-    durationMinutes: service.data.duration_minutes,
-    rules: rules.data || [],
-    bookings: (bookings.data || []).filter((b) => b.starts_at && b.ends_at) as { starts_at: string; ends_at: string }[],
-    blockedTimes: blocked.data || []
+  const availability = await assertBookingSlotAvailable({
+    supabase,
+    service: service.data,
+    startsAt: data.starts_at
   });
-  if (!slots.includes(starts.toISOString())) return NextResponse.json({ error: "That time is no longer available." }, { status: 409 });
+  if (!availability.ok) return NextResponse.json({ error: availability.error }, { status: 409 });
+  const starts = availability.starts;
+  const ends = availability.ends;
 
   const code = data.gift_card_code?.trim();
-  // Respect the service's deposit configuration (default to requiring a deposit).
   let depositRequired = service.data.requires_deposit !== false;
-  let giftCardStatus = null;
+  let giftCardStatus: string | null = null;
   let giftCardCodeId: string | null = null;
-  let giftCardUsedCount = 0;
-  if (code) {
-    const waiver = await supabase.from("gift_card_codes").select("id,used_count,allow_reuse,redeemed_at").ilike("code", code).eq("is_active", true).maybeSingle();
-    if (waiver.data) {
-      if (!waiver.data.allow_reuse && (waiver.data.used_count > 0 || waiver.data.redeemed_at)) {
-        return NextResponse.json({ error: "This gift card/code has already been used." }, { status: 400 });
-      }
-      depositRequired = false;
-      giftCardStatus = "accepted";
-      giftCardCodeId = waiver.data.id;
-      giftCardUsedCount = waiver.data.used_count || 0;
-    } else {
-      return NextResponse.json({ error: "Gift card/code was not found. Please check the code or continue without it to pay the 20% deposit." }, { status: 400 });
-    }
-  }
-
-  // Determine why a deposit is waived, for accurate record-keeping.
-  // Precedence: a service that requires no deposit < gift card < active membership.
-  let waiverReason: string | null = depositRequired ? null : "no_deposit";
-  if (giftCardCodeId) waiverReason = "gift_card";
-
-  // Check for an active membership → waive deposit. memberships.client_id references
-  // clients.id, so resolve the caller's client row by profile_id first.
-  if (depositRequired) {
-    const clientLookup = await supabase.from("clients").select("id").eq("profile_id", userData.user.id).maybeSingle();
-    if (clientLookup.data) {
-      const membership = await supabase
-        .from("memberships")
-        .select("id")
-        .eq("client_id", clientLookup.data.id)
-        .eq("status", "active")
-        .maybeSingle();
-      if (membership.data) {
-        depositRequired = false;
-        waiverReason = "membership";
-      }
-    }
-  }
+  let giftCertificate: Awaited<ReturnType<typeof validateGiftCertificateCode>> | null = null;
+  let waiverReason: string | null = depositRequired ? null : "service_no_deposit";
 
   const bookingEmail = userData.user.email;
   const existingClient = await supabase.from("clients").select("id").or(`profile_id.eq.${userData.user.id},email.ilike.${bookingEmail}`).limit(1).maybeSingle();
@@ -106,6 +62,29 @@ export async function POST(request: Request) {
   const client = existingClient.data
     ? await supabase.from("clients").update(clientPayload).eq("id", existingClient.data.id).select("id").single()
     : await supabase.from("clients").insert(clientPayload).select("id").single();
+  if (client.error) return NextResponse.json({ error: client.error.message }, { status: 500 });
+
+  if (code) {
+    giftCertificate = await validateGiftCertificateCode(supabase, code);
+    if (!giftCertificate.valid) return NextResponse.json({ error: giftCertificate.message }, { status: 400 });
+    depositRequired = false;
+    waiverReason = "gift_certificate";
+    giftCardStatus = "accepted";
+    giftCardCodeId = String(giftCertificate.code.id);
+  }
+
+  if (depositRequired) {
+    const membership = await supabase
+      .from("memberships")
+      .select("id")
+      .eq("client_id", client.data.id)
+      .eq("status", "active")
+      .maybeSingle();
+    if (membership.data) {
+      depositRequired = false;
+      waiverReason = "membership";
+    }
+  }
 
   // Intake gate: intake/consent forms are submitted separately to /api/forms
   // (stored in client_forms), not in the booking payload. Verify the required
@@ -128,12 +107,15 @@ export async function POST(request: Request) {
   }
   const settings = await supabase.from("business_settings").select("gift_card_auto_confirm").eq("id", 1).maybeSingle();
 
-  const ends = new Date(starts.getTime() + service.data.duration_minutes * 60000);
   const serviceTotal = Number(service.data.service_total || 0);
   const depositPercent = 20;
-  const depositAmount = depositRequired && serviceTotal > 0 ? Math.round(serviceTotal * (depositPercent / 100)) : 0;
+  const requiredDepositAmount = serviceTotal > 0 ? Math.round(serviceTotal * (depositPercent / 100)) : Number(service.data.deposit_amount_cents || 0);
+  const depositAmount = depositRequired ? requiredDepositAmount : 0;
   const remainingBalance = Math.max(serviceTotal - depositAmount, 0);
   const canCreateSquareCheckout = depositRequired && depositAmount > 0 && squareConfigured();
+  if (depositRequired && depositAmount > 0 && !canCreateSquareCheckout) {
+    return NextResponse.json({ error: "Deposit payments are not configured yet. Please contact the studio to book." }, { status: 503 });
+  }
   const booking = await supabase.from("bookings").insert({
     client_id: client.data?.id || null,
     service_id: service.data.id,
@@ -145,9 +127,10 @@ export async function POST(request: Request) {
     starts_at: starts.toISOString(),
     ends_at: ends.toISOString(),
     deposit_required: depositRequired,
-    deposit_status: depositRequired ? canCreateSquareCheckout ? "payment_link_pending" : "pending" : "waived",
+    deposit_status: depositRequired ? "unpaid" : "waived",
     waiver_reason: depositRequired ? null : waiverReason,
     gift_card_code_id: giftCardCodeId,
+    gift_certificate_code_id: giftCardCodeId,
     service_total: serviceTotal,
     deposit_percent: depositPercent,
     deposit_amount: depositAmount,
@@ -184,22 +167,29 @@ export async function POST(request: Request) {
     await supabase.from("bookings").update({
       square_checkout_url: square.url,
       square_order_id: square.orderId || null,
-      deposit_status: "payment_link_sent"
+      deposit_status: "unpaid"
     }).eq("id", booking.data.id);
   }
-  if (code && giftCardStatus === "accepted") {
-    await supabase.from("gift_card_code_redemptions").insert({ client_id: client.data?.id || null, booking_id: booking.data.id, code, status: "accepted" });
-    // Read current balance to decrement it
-    const { data: gcRow } = await supabase.from("gift_card_codes").select("balance_cents").eq("id", giftCardCodeId).maybeSingle();
-    const newBalance = Math.max(0, (gcRow?.balance_cents ?? 0) - depositAmount);
-    await supabase.from("gift_card_codes").update({
-      used_count: giftCardUsedCount + 1,
-      redeemed_at: new Date().toISOString(),
-      balance_cents: newBalance,
-    }).eq("id", giftCardCodeId);
+  if (giftCertificate?.valid) {
+    await markGiftCertificateUsed({
+      supabase,
+      code: giftCertificate.code,
+      clientId: client.data.id,
+      bookingId: booking.data.id,
+      usageCount: giftCertificate.usageCount,
+      amountWaived: requiredDepositAmount
+    });
   }
 
   await notifyAdmin("New booking request", `${booking.data.client_name} requested ${service.data.name} on ${starts.toLocaleString()}.`);
-  await notifyClient(bookingEmail, "Your booking request was received", depositRequired && squareCheckoutUrl ? `We received your ${service.data.name} booking request. Please pay the 20% deposit to confirm: ${squareCheckoutUrl}` : `We received your ${service.data.name} booking request. Lilly will confirm it soon.`);
+  await notifyClient(
+    bookingEmail,
+    "Your booking request was received",
+    depositRequired && squareCheckoutUrl
+      ? `We received your ${service.data.name} booking request. Please pay the 20% deposit to confirm: ${squareCheckoutUrl}`
+      : waiverReason === "gift_certificate"
+      ? `Gift certificate applied. No deposit is due today. Lilly will confirm your ${service.data.name} booking soon.`
+      : `We received your ${service.data.name} booking request. Lilly will confirm it soon.`
+  );
   return NextResponse.json({ ok: true, booking: booking.data, square_checkout_url: squareCheckoutUrl, requires_intake: service.data.requires_intake, intake_type: service.data.intake_type });
 }

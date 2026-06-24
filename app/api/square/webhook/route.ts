@@ -134,7 +134,10 @@ export async function POST(request: Request) {
   if (orderId && status === "COMPLETED" && paymentNote.startsWith("booking_id:")) {
     // Idempotency: only act on the first transition to paid. On webhook retries
     // the booking is already "paid" — skip so we don't re-send confirmation emails.
-    const prior = await supabase.from("bookings").select("id, deposit_status").eq("square_order_id", orderId).maybeSingle();
+    const prior = await supabase.from("bookings").select("id, deposit_status, waiver_reason").eq("square_order_id", orderId).maybeSingle();
+    if (prior.data?.deposit_status === "waived" || prior.data?.waiver_reason === "gift_certificate") {
+      return NextResponse.json({ ok: true, ignored: "deposit_waived" });
+    }
     if (prior.data?.deposit_status === "paid") {
       return NextResponse.json({ ok: true, deduped: true });
     }

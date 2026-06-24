@@ -17,13 +17,20 @@ export function GiftCodeManager({ codes }: { codes: Record<string, any>[] }) {
 
   return (
     <div className="mini-list">
-      {codes.map((code) => (
+      {codes.map((code) => {
+        const usageCount = code.usage_count ?? code.used_count ?? 0;
+        const usageLimit = code.usage_limit ?? (code.allow_reuse ? "unlimited" : 1);
+        return (
         <p key={code.id}>
-          {code.code} · active: {String(code.is_active)} · reusable: {String(code.allow_reuse)} · used: {code.used_count || 0}
+          {code.code} · {code.type || "gift_certificate"} · active: {String(code.is_active)} · used: {usageCount}/{usageLimit}
+          {code.value_cents ? ` · value: $${(Number(code.value_cents) / 100).toFixed(2)}` : ""}
+          {code.expires_at ? ` · expires: ${new Date(code.expires_at).toLocaleDateString()}` : ""}
+          {code.used_on_booking_id ? ` · booking: ${code.used_on_booking_id}` : ""}
           <button className="admin-link-button" type="button" onClick={() => update(code.id, { is_active: false })}>Deactivate</button>
-          <button className="admin-link-button" type="button" onClick={() => update(code.id, { redeemed_at: new Date().toISOString(), used_count: (code.used_count || 0) + 1 })}>Mark Redeemed</button>
+          <button className="admin-link-button" type="button" onClick={() => update(code.id, { redeemed_at: new Date().toISOString(), used_at: new Date().toISOString(), used_count: Number(usageCount) + 1, usage_count: Number(usageCount) + 1 })}>Mark Redeemed</button>
         </p>
-      ))}
+        );
+      })}
       {message && <p className="admin-message">{message}</p>}
     </div>
   );

@@ -3,6 +3,8 @@ import { z } from "zod";
 const phone = z.string().trim().optional();
 const email = z.string().trim().email("Enter a valid email.");
 const honeypot = z.string().max(0, "Spam detected.").optional().or(z.literal(""));
+const optionalNumber = (schema: z.ZodType) => z.preprocess((value) => value === "" ? undefined : value, schema.optional());
+const optionalString = () => z.preprocess((value) => value === "" ? undefined : value, z.string().trim().optional());
 
 export const contactInquirySchema = z.object({
   name: z.string().trim().min(2, "Name is required."),
@@ -54,7 +56,10 @@ export const adminBookingUpdateSchema = z.object({
   internal_notes: z.string().trim().optional(),
   deposit_required: z.coerce.boolean().optional(),
   deposit_status: z.string().trim().optional(),
-  deposit_amount_cents: z.coerce.number().int().nonnegative().optional()
+  deposit_amount_cents: optionalNumber(z.coerce.number().int().nonnegative()),
+  gift_card_code: z.string().trim().optional(),
+  gift_card_code_id: z.string().uuid().optional().or(z.literal("")),
+  waiver_reason: z.string().trim().optional()
 });
 
 export const serviceSchema = z.object({
@@ -176,6 +181,10 @@ export const membershipSchema = z.object({
 export const waiverCodeSchema = z.object({
   code: z.string().trim().min(2),
   description: z.string().trim().optional(),
+  type: z.string().trim().default("gift_certificate"),
+  value_cents: optionalNumber(z.coerce.number().int().nonnegative()),
+  usage_limit: optionalNumber(z.coerce.number().int().positive()),
+  expires_at: optionalString(),
   allow_reuse: z.coerce.boolean().default(false),
   is_active: z.coerce.boolean().default(true)
 });
