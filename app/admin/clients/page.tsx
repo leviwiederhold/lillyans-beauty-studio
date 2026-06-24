@@ -1,49 +1,46 @@
 import { AdminShell } from "@/components/admin/AdminShell";
-import { SearchableClients } from "@/components/admin/AdminDataViews";
+import { ClientsGrid } from "@/components/admin/ui/ClientsGrid";
 import { requireAdmin } from "@/lib/admin";
-import { OwnerTools } from "@/components/admin/OwnerTools";
-import { DataTable } from "@/components/admin/AdminDataViews";
-import { formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-export default async function ClientsPage() {
+type AnyRow = Record<string, unknown>;
+async function safe<T>(q: PromiseLike<T> | undefined): Promise<AnyRow[]> {
+  if (!q) return [];
+  try { return (((await q) as { data?: AnyRow[] | null }).data) ?? []; } catch { return []; }
+}
+
+export default async function ClientsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { supabase } = await requireAdmin();
-  const [clients, forms, bookings, memberships] = await Promise.all([
-    supabase?.from("clients").select("*").order("updated_at", { ascending: false }).limit(300),
-    supabase?.from("intake_forms").select("client_id,type,service_label"),
-    supabase?.from("bookings").select("client_id,service_type,status"),
-    supabase?.from("memberships").select("client_id,status,plan_name")
+  const { q } = await searchParams;
+
+  const [clients, bookings, forms, memberships] = await Promise.all([
+    safe(supabase?.from("clients").select("*").order("updated_at", { ascending: false }).limit(300)),
+    safe(supabase?.from("bookings").select("client_id")),
+    safe(supabase?.from("client_forms").select("client_id")),
+    safe(supabase?.from("memberships").select("client_id,status,plan_name").eq("status", "active")),
   ]);
 
-  const rows = (clients?.data || []).map((client) => {
-    const clientForms = (forms?.data || []).filter((f) => f.client_id === client.id);
-    const clientBookings = (bookings?.data || []).filter((b) => b.client_id === client.id);
-    const membership = (memberships?.data || []).find((m) => m.client_id === client.id);
+  const rows = clients.map((c) => {
+    const member = memberships.find((m) => m.client_id === c.id);
     return {
-      ...client,
-      services_used: Array.from(new Set([...clientForms.map((f) => f.service_label), ...clientBookings.map((b) => b.service_type)].filter(Boolean))),
-      intake_count: clientForms.length,
-      booking_count: clientBookings.length,
-      membership_status: membership ? `${membership.plan_name || "Membership"} (${membership.status})` : client.membership_status || ""
+      id: String(c.id),
+      first_name: c.first_name as string | null,
+      last_name: c.last_name as string | null,
+      email: c.email as string | null,
+      phone: c.phone as string | null,
+      created_at: c.created_at as string | null,
+      booking_count: bookings.filter((b) => b.client_id === c.id).length,
+      intake_count: forms.filter((f) => f.client_id === c.id).length,
+      is_member: !!member,
+      member_label: member ? `${String(member.plan_name || "Member")}` : undefined,
     };
   });
-  const duplicatePairs = rows.flatMap((client, index) => rows.slice(index + 1).filter((other) => (client.email && other.email && client.email.toLowerCase() === other.email.toLowerCase()) || (client.phone && other.phone && client.phone === other.phone)).map((duplicate) => ({ primary: client, duplicate })));
-  const timeline = [
-    ...(forms?.data || []).map((f) => ({ type: "Intake", client_id: f.client_id, label: f.service_label, created_at: new Date().toISOString() })),
-    ...(bookings?.data || []).map((b) => ({ type: "Booking", client_id: b.client_id, label: `${b.service_type} - ${b.status}`, created_at: new Date().toISOString() })),
-    ...(memberships?.data || []).map((m) => ({ type: "Membership", client_id: m.client_id, label: `${m.plan_name} - ${m.status}`, created_at: new Date().toISOString() }))
-  ];
 
   return (
-    <AdminShell title="Clients & Accounts" eyebrow="Admin / Clients">
-      <OwnerTools duplicatePairs={duplicatePairs} />
-      <SearchableClients clients={rows} />
-      <DataTable title="Client Activity Timeline" rows={timeline} columns={[
-        { key: "type", label: "Type" },
-        { key: "label", label: "Activity" },
-        { key: "created_at", label: "When", render: (r) => formatDateTime(r.created_at) }
-      ]} />
+    <AdminShell title="Clients" eyebrow="Manage">
+      <p className="page-sub" style={{ marginTop: -12, marginBottom: 16 }}>{rows.length} client{rows.length === 1 ? "" : "s"} total</p>
+      <ClientsGrid clients={rows} initialQuery={q || ""} />
     </AdminShell>
   );
 }
