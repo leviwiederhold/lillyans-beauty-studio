@@ -20,6 +20,11 @@ export default async function AccountPage() {
   if (!data.user?.email) redirect("/login");
 
   const supabase = createSupabaseAdminClient();
+
+  // Admins get the operations dashboard, not the client account experience.
+  const adminProfile = await supabase?.from("profiles").select("is_admin,role").eq("id", data.user.id).maybeSingle();
+  if (adminProfile?.data?.is_admin || adminProfile?.data?.role === "admin") redirect("/admin");
+
   const clientRes = await supabase?.from("clients").select("*").or(`profile_id.eq.${data.user.id},email.ilike.${data.user.email}`).limit(1).maybeSingle();
   const client = clientRes?.data;
 

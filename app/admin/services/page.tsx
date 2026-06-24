@@ -1,78 +1,62 @@
 import { AdminShell } from "@/components/admin/AdminShell";
+import { EmptyState } from "@/components/admin/ui/components";
+import { ServiceToggle } from "@/components/admin/ui/ServiceToggle";
 import { requireAdmin } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 
+type AnyRow = Record<string, unknown>;
+
 export default async function AdminServicesPage() {
   const { supabase } = await requireAdmin();
-  const [servicesRes, categoriesRes] = await Promise.all([
-    supabase?.from("services").select("*, service_categories(name)").order("sort_order"),
-    supabase?.from("service_categories").select("*").order("sort_order")
-  ]);
-  const services = servicesRes?.data || [];
-  const categories = categoriesRes?.data || [];
+  let services: AnyRow[] = [];
+  try {
+    const res = await supabase?.from("services").select("*, service_categories(name)").order("sort_order");
+    services = (res?.data as AnyRow[]) ?? [];
+  } catch { services = []; }
+
+  // Group by category, preserving order.
+  const groups = new Map<string, AnyRow[]>();
+  for (const s of services) {
+    const cat = String((s.service_categories as AnyRow)?.name || "Other");
+    if (!groups.has(cat)) groups.set(cat, []);
+    groups.get(cat)!.push(s);
+  }
+
+  function price(s: AnyRow) {
+    const cents = Number(s.service_total || 0);
+    return cents ? `$${(cents / 100).toFixed(0)}` : "—";
+  }
+  function meta(s: AnyRow) {
+    const bits = [s.duration_minutes ? `${s.duration_minutes} min` : ""];
+    if (s.requires_deposit) bits.push("Deposit required");
+    if (s.requires_intake) bits.push("Intake required");
+    return bits.filter(Boolean).join(" · ");
+  }
 
   return (
-    <AdminShell title="Services & Pricing" eyebrow="Admin / Store">
-      <div className="card" style={{ marginBottom: "1rem" }}>
-        <div className="card-header">
-          <span className="card-title" style={{ fontSize: "1rem" }}>All Services ({services.length})</span>
-        </div>
-        <div className="card-body" style={{ padding: 0 }}>
-          {services.length === 0 ? (
-            <p style={{ padding: "1rem", fontSize: "0.82rem", color: "var(--grey-mid)" }}>No services yet.</p>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Service</th>
-                  <th>Category</th>
-                  <th>Total</th>
-                  <th>Duration</th>
-                  <th>Deposit</th>
-                  <th>Intake</th>
-                  <th>Active</th>
-                </tr>
-              </thead>
-              <tbody>
-                {services.map((s) => (
-                  <tr key={s.id}>
-                    <td>
-                      <div style={{ fontWeight: 500 }}>{s.name}</div>
-                      {s.description && <div style={{ fontSize: "0.72rem", color: "var(--grey-mid)" }}>{String(s.description).slice(0, 60)}</div>}
-                    </td>
-                    <td>{s.service_categories?.name || "—"}</td>
-                    <td>{s.service_total ? `$${(s.service_total / 100).toFixed(0)}` : "—"}</td>
-                    <td>{s.duration_minutes} min</td>
-                    <td>{s.requires_deposit ? <span className="badge badge-amber">Required</span> : <span className="badge badge-grey">None</span>}</td>
-                    <td>{s.requires_intake ? <span className="badge badge-pink">{s.intake_type || "Yes"}</span> : <span className="badge badge-grey">No</span>}</td>
-                    <td>{s.is_active ? <span className="badge badge-green">Active</span> : <span className="badge badge-grey">Hidden</span>}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="card-header"><span className="card-title" style={{ fontSize: "1rem" }}>Categories ({categories.length})</span></div>
-        <div className="card-body" style={{ padding: 0 }}>
-          <table className="data-table">
-            <thead><tr><th>Category</th><th>Description</th><th>Order</th><th>Active</th></tr></thead>
-            <tbody>
-              {categories.map((c) => (
-                <tr key={c.id}>
-                  <td>{c.name}</td>
-                  <td style={{ color: "var(--grey-mid)" }}>{String(c.description || "—")}</td>
-                  <td>{c.sort_order}</td>
-                  <td>{c.is_active ? <span className="badge badge-green">Active</span> : <span className="badge badge-grey">Hidden</span>}</td>
-                </tr>
+    <AdminShell title="Services" eyebrow="Business">
+      {services.length === 0 ? (
+        <div className="card"><EmptyState icon="ti-scissors" title={<>No services <em>yet</em></>} sub="Add services to make them bookable." /></div>
+      ) : (
+        <div className="card" style={{ overflow: "hidden" }}>
+          {[...groups.entries()].map(([cat, items]) => (
+            <div key={cat}>
+              <div className="svc-group-label">{cat}</div>
+              {items.map((s) => (
+                <div key={String(s.id)} className="svc-table-row">
+                  <div className="svc-name-col">
+                    <div className="svc-name">{String(s.name || "")}</div>
+                    <div className="svc-cat">{meta(s)}</div>
+                  </div>
+                  <div className="svc-col price">{price(s)}</div>
+                  <ServiceToggle id={String(s.id)} active={!!s.is_active} />
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
     </AdminShell>
   );
 }

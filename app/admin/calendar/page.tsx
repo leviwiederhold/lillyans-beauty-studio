@@ -1,4 +1,5 @@
 import { AdminShell } from "@/components/admin/AdminShell";
+import { FilterPills } from "@/components/admin/ui/components";
 import { requireAdmin } from "@/lib/admin";
 import { AdminCalendarView } from "@/components/admin/AdminCalendarView";
 
@@ -23,12 +24,19 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
 
   return (
     <AdminShell title="Calendar" eyebrow="Admin / Calendar">
-      <div className="admin-filter-links" style={{ marginBottom: "1rem" }}>
-        <a href="/admin/calendar">All</a>
-        {["pending", "pending_admin_confirmation", "confirmed", "completed", "cancelled"].map((s) => (
-          <a key={s} href={`/admin/calendar?status=${s}`}>{s}</a>
-        ))}
-      </div>
+      <FilterPills
+        basePath="/admin/calendar"
+        param="status"
+        active={params.status || "all"}
+        options={[
+          { value: "all", label: "All" },
+          { value: "pending", label: "Pending" },
+          { value: "pending_admin_confirmation", label: "Needs confirm" },
+          { value: "confirmed", label: "Confirmed" },
+          { value: "completed", label: "Completed" },
+          { value: "cancelled", label: "Cancelled" },
+        ]}
+      />
       <AdminCalendarView bookings={bookings} blockedTimes={blockedTimes} />
     </AdminShell>
   );
