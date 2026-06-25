@@ -124,6 +124,29 @@ export function BookingFlow({
   const [submitMsg, setSubmitMsg] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [done, setDone] = useState(false);
+  // Express-booking intake review step
+  const [updateMode, setUpdateMode] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
+  const [reviewMsg, setReviewMsg] = useState("");
+
+  async function confirmReview() {
+    setReviewing(true);
+    setReviewMsg("");
+    try {
+      const res = await fetch("/api/forms/review", { method: "POST" });
+      if (res.status === 401) { window.location.assign("/login?next=/book"); return; }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setReviewMsg(d.error || "Could not confirm. Please try again.");
+        setReviewing(false);
+        return;
+      }
+      goTo(3);
+    } catch {
+      setReviewMsg("Could not confirm. Please try again.");
+      setReviewing(false);
+    }
+  }
 
   const service = useMemo(() => services.find((s) => s.id === serviceId), [services, serviceId]);
   const depositCents = service?.deposit_amount_cents ?? (service?.service_total ? Math.round(service.service_total * 0.2) : 0);
@@ -443,12 +466,12 @@ export function BookingFlow({
                 .filter((e) => requiredForms.includes(e.form_type))
                 .sort((a, b) => (a.submitted_at < b.submitted_at ? 1 : -1))[0]?.submitted_at;
 
-              if (allFormsOnFile && mostRecentDate) {
+              if (allFormsOnFile && mostRecentDate && !updateMode) {
                 return (
                   <>
                     <div className="bk-step-eyebrow">Step 3 of 5</div>
-                    <h2 className="bk-step-title">Intake Forms</h2>
-                    <p className="bk-step-sub">Your health information on file</p>
+                    <h2 className="bk-step-title">Confirm Your Health Info</h2>
+                    <p className="bk-step-sub">Please confirm your health information is still accurate</p>
                     <div className="card" style={{ maxWidth: 500, marginBottom: "1rem" }}>
                       <div className="card-header" style={{ background: "var(--black)" }}>
                         <span className="card-title" style={{ color: "#fff" }}>Forms on File</span>
@@ -466,16 +489,26 @@ export function BookingFlow({
                           })}
                         </div>
                         <p style={{ fontSize: "0.78rem", color: "var(--grey-mid)", marginBottom: "1rem" }}>
-                          No action needed — your forms are current.
-                          You can update them from your account any time.
+                          Has anything about your health, medications, allergies, or conditions changed
+                          since you last completed your forms?
                         </p>
-                        <a
-                          href="/account/intake"
-                          className="btn btn-ghost btn-sm"
-                          style={{ textDecoration: "none" }}
-                        >
-                          Update Forms
-                        </a>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.6rem" }}>
+                          <button
+                            className="btn btn-pink btn-sm"
+                            onClick={confirmReview}
+                            disabled={reviewing}
+                          >
+                            {reviewing ? "Confirming…" : "Nothing has changed"}
+                          </button>
+                          <button
+                            className="btn btn-app-outline btn-sm"
+                            onClick={() => { setReviewMsg(""); setUpdateMode(true); }}
+                            disabled={reviewing}
+                          >
+                            Update my health information
+                          </button>
+                        </div>
+                        {reviewMsg && <p style={{ fontSize: "0.78rem", color: "#9b1c31", marginTop: "0.7rem" }}>{reviewMsg}</p>}
                       </div>
                     </div>
                   </>
@@ -488,7 +521,7 @@ export function BookingFlow({
                   userId={userId}
                   bookingId={null}
                   onComplete={() => goTo(3)}
-                  onBack={() => goTo(1)}
+                  onBack={() => (updateMode ? setUpdateMode(false) : goTo(1))}
                 />
               );
             })()}
@@ -672,16 +705,16 @@ export function BookingFlow({
           </div>
         )}
 
-        {/* On-file "forms" step shows its own Continue in the footer */}
+        {/* Review step (forms on file): the in-card choices drive Continue, so the
+            footer only offers Back. In update mode, IntakeStep owns its own nav. */}
         {step === 2 && selectedServiceInfo && (() => {
           const requiredForms = requiredFormsForCategory(selectedServiceInfo.category);
           const allFormsOnFile = requiredForms.every((ft) =>
             existingFormTypes.some((e) => e.form_type === ft)
           );
-          return allFormsOnFile ? (
+          return allFormsOnFile && !updateMode ? (
             <div className="bk-footer">
               <button className="btn btn-ghost btn-sm" onClick={() => goTo(1)}>← Back</button>
-              <button className="btn btn-pink btn-sm" onClick={() => goTo(3)}>Continue →</button>
             </div>
           ) : null;
         })()}
