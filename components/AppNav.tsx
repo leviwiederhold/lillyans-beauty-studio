@@ -8,25 +8,31 @@ export async function AppNav() {
   let isAdmin = false;
   let initials = "";
 
-  if (auth) {
-    const { data } = await auth.auth.getUser();
-    user = data.user ?? null;
-    if (user) {
-      const supabase = createSupabaseAdminClient();
-      const { data: profile } = await supabase
-        ?.from("profiles")
-        .select("role,is_admin,full_name")
-        .eq("id", user.id)
-        .maybeSingle() ?? { data: null };
-      isAdmin = !!(profile?.is_admin || profile?.role === "admin");
-      const name: string = profile?.full_name || user.email || "";
-      initials = name
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((p: string) => p[0].toUpperCase())
-        .join("") || (user.email?.[0]?.toUpperCase() ?? "?");
+  // Never let an auth/DB hiccup (Supabase paused/over quota) crash the nav, which
+  // renders on every page. Degrade to a signed-out nav on failure.
+  try {
+    if (auth) {
+      const { data } = await auth.auth.getUser();
+      user = data.user ?? null;
+      if (user) {
+        const supabase = createSupabaseAdminClient();
+        const { data: profile } = await supabase
+          ?.from("profiles")
+          .select("role,is_admin,full_name")
+          .eq("id", user.id)
+          .maybeSingle() ?? { data: null };
+        isAdmin = !!(profile?.is_admin || profile?.role === "admin");
+        const name: string = profile?.full_name || user.email || "";
+        initials = name
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((p: string) => p[0].toUpperCase())
+          .join("") || (user.email?.[0]?.toUpperCase() ?? "?");
+      }
     }
+  } catch {
+    user = null; isAdmin = false; initials = "";
   }
 
   return (

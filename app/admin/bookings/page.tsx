@@ -1,32 +1,65 @@
 import { AdminShell } from "@/components/admin/AdminShell";
-import { StatGrid } from "@/components/admin/AdminDataViews";
-import { BookingManager } from "@/components/admin/BookingManager";
+import { FilterPills, DataTable, StatusBadge, type Row } from "@/components/admin/ui/components";
+import { BookingStatusControl } from "@/components/admin/ui/BookingStatusControl";
 import { requireAdmin } from "@/lib/admin";
+import { fullName, formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
+const FILTERS = [
+  { value: "all", label: "All" },
+  { value: "pending", label: "Deposit due" },
+  { value: "pending_admin_confirmation", label: "Needs confirm" },
+  { value: "confirmed", label: "Confirmed" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
   const { supabase } = await requireAdmin();
   const params = await searchParams;
-  let query = supabase?.from("bookings").select("*, clients(first_name,last_name,email,phone)").order("starts_at", { ascending: false }).limit(200);
-  if (params.status && params.status !== "all") query = query?.eq("status", params.status);
-  const bookings = await query;
-  const rows = bookings?.data || [];
-  const now = Date.now();
+  const active = params.filter || "all";
+
+  let query = supabase
+    ?.from("bookings")
+    .select("*, clients(first_name,last_name,email,phone)")
+    .order("starts_at", { ascending: false })
+    .limit(200);
+  if (active !== "all") query = query?.eq("status", active);
+  let rows: Row[] = [];
+  try { rows = ((await query)?.data as Row[]) ?? []; } catch { rows = []; }
+
+  const columns = [
+    {
+      key: "client", label: "Client",
+      render: (r: Row) => (
+        <>
+          <div className="dt-name">{(r.clients ? fullName(r.clients as Row) : "") || String(r.client_name || "Guest")}</div>
+          <div className="dt-sub">{String((r.clients as Row)?.email || r.email || "")}</div>
+        </>
+      ),
+    },
+    { key: "service_type", label: "Service" },
+    { key: "starts_at", label: "Date & Time", render: (r: Row) => formatDateTime(r.starts_at) },
+    {
+      key: "deposit_status", label: "Deposit",
+      render: (r: Row) => {
+        const d = String(r.deposit_status || "");
+        if (d === "paid") return <StatusBadge status="paid" label="Paid" />;
+        if (d === "waived") return <StatusBadge status="completed" label="Waived" />;
+        return <StatusBadge status="pending" label="Due" />;
+      },
+    },
+    {
+      key: "status", label: "Status",
+      render: (r: Row) => <BookingStatusControl id={String(r.id)} status={String(r.status || "")} />,
+    },
+  ];
 
   return (
-    <AdminShell title="Bookings & Inquiries" eyebrow="Admin / Bookings">
-      <div className="admin-filter-links">
-        {["all", "pending", "pending_admin_confirmation", "confirmed", "denied", "cancelled", "completed", "no-show"].map((s) => <a key={s} href={`/admin/bookings?status=${s}`}>{s}</a>)}
-      </div>
-      <StatGrid stats={[
-        { label: "Upcoming", value: rows.filter((r) => r.starts_at && new Date(r.starts_at).getTime() >= now).length },
-        { label: "Past", value: rows.filter((r) => r.starts_at && new Date(r.starts_at).getTime() < now).length },
-        { label: "Pending", value: rows.filter((r) => r.status === "pending").length },
-        { label: "Confirmed", value: rows.filter((r) => r.status === "confirmed").length },
-        { label: "Cancelled", value: rows.filter((r) => r.status === "cancelled").length }
-      ]} />
-      <BookingManager rows={rows} />
+    <AdminShell title="Bookings" eyebrow="Manage">
+      <FilterPills options={FILTERS} active={active} basePath="/admin/bookings" />
+      <DataTable columns={columns} rows={rows} empty="No bookings match this filter yet." />
     </AdminShell>
   );
 }

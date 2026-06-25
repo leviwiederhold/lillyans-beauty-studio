@@ -54,11 +54,14 @@ function overlaps(start: Date, end: Date, busy: Busy) {
   return start < bEnd && end > bStart;
 }
 
-export function generateSlots({ date, durationMinutes, rules, bookings, blockedTimes }: { date: string; durationMinutes: number; rules: Rule[]; bookings: Busy[]; blockedTimes: Busy[] }) {
+export function generateSlots({ date, durationMinutes, rules, bookings, blockedTimes, minNoticeHours = 0 }: { date: string; durationMinutes: number; rules: Rule[]; bookings: Busy[]; blockedTimes: Busy[]; minNoticeHours?: number }) {
   const day = new Date(`${date}T12:00:00Z`).getUTCDay();
   const activeRules = rules.filter((r) => r.day_of_week === day);
   const busy = [...bookings, ...blockedTimes];
   const slots: string[] = [];
+
+  // Earliest bookable moment: now + the studio's minimum-notice window.
+  const earliest = new Date(Date.now() + Math.max(0, minNoticeHours) * 3600_000);
 
   for (const rule of activeRules) {
     const start = minutes(rule.start_time);
@@ -66,7 +69,7 @@ export function generateSlots({ date, durationMinutes, rules, bookings, blockedT
     for (let cursor = start; cursor + durationMinutes <= end; cursor += 15) {
       const slotStart = easternToUTC(date, cursor);
       const slotEnd = easternToUTC(date, cursor + durationMinutes);
-      if (slotStart <= new Date()) continue;
+      if (slotStart < earliest) continue;
       if (!busy.some((b) => overlaps(slotStart, slotEnd, b))) {
         slots.push(slotStart.toISOString());
       }
@@ -74,4 +77,11 @@ export function generateSlots({ date, durationMinutes, rules, bookings, blockedT
   }
 
   return slots;
+}
+
+// Shared helper so the availability + booking APIs agree on the notice rule.
+export function meetsMinimumNotice(startsAt: string | Date, minNoticeHours: number): boolean {
+  const start = typeof startsAt === "string" ? new Date(startsAt) : startsAt;
+  const earliest = new Date(Date.now() + Math.max(0, minNoticeHours) * 3600_000);
+  return start >= earliest;
 }

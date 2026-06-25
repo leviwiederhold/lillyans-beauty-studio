@@ -26,3 +26,38 @@ export function missingForms(category: string | null | undefined, onFileFormType
   const onFile = new Set(onFileFormTypes);
   return required.filter((ft) => !onFile.has(ft));
 }
+
+export type IntakeStatus = "missing" | "incomplete" | "current" | "outdated";
+
+type IntakeFormRow = { form_type: string; submitted_at?: string | null; last_reviewed_at?: string | null };
+
+/**
+ * Classifies a client's intake state for a service category given their forms and
+ * the studio's expiration window (months). "current" means all required forms are
+ * present and the most recent submit/review is within the window.
+ */
+export function intakeStatus(
+  category: string | null | undefined,
+  forms: IntakeFormRow[],
+  expirationMonths: number
+): IntakeStatus {
+  const required = requiredFormsForCategory(category);
+  const onFile = new Set(forms.map((f) => f.form_type));
+  const present = required.filter((ft) => onFile.has(ft));
+  if (present.length === 0) return "missing";
+  if (present.length < required.length) return "incomplete";
+
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - Math.max(0, expirationMonths));
+  const freshest = forms
+    .filter((f) => required.includes(f.form_type))
+    .reduce((best, f) => {
+      const t = Math.max(
+        f.submitted_at ? new Date(f.submitted_at).getTime() : 0,
+        f.last_reviewed_at ? new Date(f.last_reviewed_at).getTime() : 0
+      );
+      return Math.max(best, t);
+    }, 0);
+  if (freshest > 0 && freshest < cutoff.getTime()) return "outdated";
+  return "current";
+}

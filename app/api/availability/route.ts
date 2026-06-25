@@ -16,12 +16,14 @@ export async function GET(request: Request) {
 
   const { dayStart, dayEnd } = easternDayBounds(date);
 
-  const [rules, bookings, blocked, override] = await Promise.all([
+  const [rules, bookings, blocked, override, settings] = await Promise.all([
     supabase.from("availability_rules").select("*").eq("is_active", true),
     supabase.from("bookings").select("starts_at,ends_at").in("status", ["pending", "confirmed"]).gte("starts_at", dayStart).lte("starts_at", dayEnd),
     supabase.from("blocked_times").select("starts_at,ends_at").lte("starts_at", dayEnd).gte("ends_at", dayStart),
     supabase.from("business_hour_overrides").select("*").eq("override_date", date).maybeSingle(),
+    supabase.from("business_settings").select("booking_minimum_notice_hours").eq("id", 1).maybeSingle(),
   ]);
+  const minNoticeHours = Number(settings.data?.booking_minimum_notice_hours ?? 48);
 
   // If a date override exists and the day is closed, return empty slots
   if (override.data?.is_closed) {
@@ -47,7 +49,8 @@ export async function GET(request: Request) {
     durationMinutes: service.data.duration_minutes || 60,
     rules: effectiveRules,
     bookings: (bookings.data || []).filter((b) => b.starts_at && b.ends_at) as { starts_at: string; ends_at: string }[],
-    blockedTimes: blocked.data || []
+    blockedTimes: blocked.data || [],
+    minNoticeHours
   });
   return NextResponse.json({ slots, service: service.data });
 }
