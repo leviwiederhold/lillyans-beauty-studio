@@ -15,7 +15,7 @@ function buildSections(unreviewedForms: number, pendingBookings: number): Sectio
         { href: "/admin/calendar", label: "Calendar", icon: "ti-calendar" },
         { href: "/admin/bookings", label: "Bookings", icon: "ti-notebook", badge: pendingBookings },
         { href: "/admin/clients", label: "Clients", icon: "ti-users" },
-        { href: "/admin/client-forms", label: "Intake Forms", icon: "ti-clipboard-text", badge: unreviewedForms },
+        { href: "/admin/intake-forms", label: "Intake Forms", icon: "ti-clipboard-text", badge: unreviewedForms },
       ],
     },
     {
@@ -25,7 +25,7 @@ function buildSections(unreviewedForms: number, pendingBookings: number): Sectio
         { href: "/admin/services", label: "Services", icon: "ti-scissors" },
         { href: "/admin/business-hours", label: "Business Hours", icon: "ti-clock" },
         { href: "/admin/blocked-times", label: "Blocked Times", icon: "ti-ban" },
-        { href: "/admin/gift-card-inquiries", label: "Gift Cards", icon: "ti-gift" },
+        { href: "/admin/gift-cards", label: "Gift Cards", icon: "ti-gift" },
       ],
     },
     {

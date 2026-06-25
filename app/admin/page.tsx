@@ -69,7 +69,7 @@ export default async function AdminOverviewPage() {
         <StatCard tone="rose" icon="ti-calendar-event" value={today.data.length} label="Today's appointments" href="/admin/calendar" />
         <StatCard tone="amber" icon="ti-clock-exclamation" value={deposits.data.length} label="Pending deposits" href="/admin/bookings" />
         <StatCard tone="green" icon="ti-crown" value={members.count} label="Active memberships" href="/admin/memberships" />
-        <StatCard tone="blue" icon="ti-clipboard-list" value={forms.count} label="Forms needing review" href="/admin/client-forms" />
+        <StatCard tone="blue" icon="ti-clipboard-list" value={forms.count} label="Forms needing review" href="/admin/intake-forms" />
       </div>
 
       <div className="two-col">
@@ -101,7 +101,7 @@ export default async function AdminOverviewPage() {
               <a className="qa-btn" href="/admin/blocked-times"><i className="ti ti-ban" />Block time</a>
               <a className="qa-btn" href="/admin/business-hours"><i className="ti ti-clock" />Edit hours</a>
               <a className="qa-btn" href="/admin/services"><i className="ti ti-plus" />Add service</a>
-              <a className="qa-btn" href="/admin/gift-card-inquiries"><i className="ti ti-gift" />Gift cards</a>
+              <a className="qa-btn" href="/admin/gift-cards"><i className="ti ti-gift" />Gift cards</a>
             </div>
           </Card>
           <Card title="Needs Attention" bodyPad={false}>

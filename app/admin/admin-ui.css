@@ -173,7 +173,7 @@
 .lbs-admin .sched-row:last-child{border-bottom:none;}
 .lbs-admin .sched-day{width:90px;font-size:13px;font-weight:500;color:var(--ink);}
 .lbs-admin .sched-time{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);}
-.lbs-admin .time-input{padding:5px 10px;border:1px solid var(--border2);border-radius:7px;font-family:var(--fs-sans);font-size:13px;color:var(--ink);background:var(--bg2);outline:none;width:108px;}
+.lbs-admin .time-input{padding:5px 10px;border:1px solid var(--border2);border-radius:7px;font-family:var(--fs-sans);font-size:13px;color:var(--ink);background:var(--bg2);outline:none;width:88px;}
 .lbs-admin .time-input:focus{border-color:var(--rose);}
 .lbs-admin .sched-closed{font-size:12px;color:var(--ink3);}
 

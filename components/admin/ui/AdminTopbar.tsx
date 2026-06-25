@@ -50,7 +50,7 @@ export function AdminTopbar({ title }: { title: string }) {
             <button className="qa-btn" onClick={() => { setMsg(""); setModal("client"); }}><i className="ti ti-user-plus" />Add client</button>
             <button className="qa-btn" onClick={() => { setModal(null); router.push("/admin/blocked-times"); }}><i className="ti ti-ban" />Block time</button>
             <button className="qa-btn" onClick={() => { setModal(null); router.push("/admin/services"); }}><i className="ti ti-plus" />Add service</button>
-            <button className="qa-btn" onClick={() => { setModal(null); router.push("/admin/gift-card-inquiries"); }}><i className="ti ti-gift" />Gift cards</button>
+            <button className="qa-btn" onClick={() => { setModal(null); router.push("/admin/gift-cards"); }}><i className="ti ti-gift" />Gift cards</button>
             <button className="qa-btn" onClick={() => { setModal(null); router.push("/admin/business-hours"); }}><i className="ti ti-clock" />Edit hours</button>
           </div>
         </Modal>
