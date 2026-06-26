@@ -109,7 +109,7 @@ export function IntakeModal({ type, onClose }: { type: IntakeType | null; onClos
         <form action={submit}>
           <div className="modal-body">
             <div className="modal-notice">Your health and safety are our top priority. All information is strictly confidential and used only to ensure your service is performed safely and effectively.</div>
-            <input className="hp" name="website" tabIndex={-1} autoComplete="off" />
+            <input className="hp" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" />
             <p className="modal-section-title">Personal Information</p>
             <div className="form-row"><Field name="first_name" label="First Name *" value={prefill.first_name} /><Field name="last_name" label="Last Name *" value={prefill.last_name} /></div>
             <div className="form-row"><Field name="date_of_birth" label="Date of Birth *" type="date" value={prefill.date_of_birth} /><LookupField name="phone" label="Phone *" onBlur={lookup} /></div>
