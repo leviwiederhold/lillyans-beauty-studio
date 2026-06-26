@@ -37,18 +37,19 @@ export function ContactForm() {
           <div className="contact-detail"><span className="contact-dot">✦</span><a href={MAPS_URL} target="_blank">{ADDRESS}</a></div>
         </div>
         <form action={submit}>
-          <input className="hp" name="website" tabIndex={-1} autoComplete="off" />
-          <div className="cf-group"><input name="name" type="text" placeholder="Your name" required /></div>
-          <div className="cf-group"><input name="email" type="email" placeholder="Email address" required /></div>
-          <div className="cf-group"><input name="phone" type="tel" placeholder="Phone number (optional)" /></div>
+          <input className="hp" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" />
+          <div className="cf-group"><label className="sr-only" htmlFor="contact-name">Your name</label><input id="contact-name" name="name" type="text" placeholder="Your name" autoComplete="name" required /></div>
+          <div className="cf-group"><label className="sr-only" htmlFor="contact-email">Email address</label><input id="contact-email" name="email" type="email" placeholder="Email address" autoComplete="email" required /></div>
+          <div className="cf-group"><label className="sr-only" htmlFor="contact-phone">Phone number</label><input id="contact-phone" name="phone" type="tel" placeholder="Phone number (optional)" autoComplete="tel" /></div>
           <div className="cf-group">
-            <select name="subject" required>
+            <label className="sr-only" htmlFor="contact-subject">What are you inquiring about?</label>
+            <select id="contact-subject" name="subject" required>
               <option value="">I&apos;m inquiring about...</option>
               <option>Wedding Makeup</option><option>Bridal Trial</option><option>Permanent Makeup</option><option>Facials</option><option>Waxing</option><option>Brow or Lash Lift</option><option>Gift Card</option><option>Membership</option><option>Other</option>
             </select>
           </div>
-          <div className="cf-group"><input name="code" type="text" placeholder="Gift card or no-deposit code (optional)" /></div>
-          <div className="cf-group"><textarea name="message" placeholder="Tell me about your event or what you're looking for..." required /></div>
+          <div className="cf-group"><label className="sr-only" htmlFor="contact-code">Gift card or no-deposit code</label><input id="contact-code" name="code" type="text" placeholder="Gift card or no-deposit code (optional)" autoComplete="off" /></div>
+          <div className="cf-group"><label className="sr-only" htmlFor="contact-message">Message</label><textarea id="contact-message" name="message" placeholder="Tell me about your event or what you're looking for..." required /></div>
           {message && <p className={`form-status ${status}`}>{message}</p>}
           <button className="btn-primary" disabled={status === "loading"} style={{ width: "100%" }}>{status === "loading" ? "Sending..." : status === "success" ? "Message Sent ✓" : "Send Message"}</button>
         </form>
