@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppNav } from "@/components/AppNav";
 
 export default function AboutPage() {
@@ -14,8 +15,8 @@ export default function AboutPage() {
         <p>Based in Fayetteville, Ohio, Lilly specializes in bridal artistry and permanent makeup — two services where precision and trust matter most. Every client receives her full attention in a clean, calm, professional studio.</p>
         <p>Available for weddings in Cincinnati, Ohio and beyond. Travel within the United States may be available when travel expenses are covered.</p>
         <div style={{ display: "flex", gap: "0.8rem", marginTop: "1.5rem", flexWrap: "wrap" }}>
-          <a href="/book" className="btn-primary">Book an Appointment</a>
-          <a href="/#contact" className="btn-outline">Contact Lilly</a>
+          <Link href="/book" className="btn-primary">Book an Appointment</Link>
+          <Link href="/#contact" className="btn-outline">Contact Lilly</Link>
         </div>
       </main>
     </div>

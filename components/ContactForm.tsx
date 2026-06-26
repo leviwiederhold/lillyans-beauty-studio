@@ -1,5 +1,6 @@
 "use client";
 
+import type { FormEvent } from "react";
 import { useState } from "react";
 import { ADDRESS, EMAIL, MAPS_URL, PHONE, PHONE_TEL } from "@/lib/constants";
 
@@ -26,6 +27,11 @@ export function ContactForm() {
     setMessage(data.deposit_required === false ? "Message sent. Your code was accepted, so no deposit is required." : "Message sent. Lilly will respond personally.");
   }
 
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await submit(new FormData(event.currentTarget));
+  }
+
   return (
     <div className="contact-strip" id="contact">
       <div className="contact-inner">
@@ -36,13 +42,13 @@ export function ContactForm() {
           <div className="contact-detail"><span className="contact-dot">✦</span><a href={`mailto:${EMAIL}`}>{EMAIL}</a></div>
           <div className="contact-detail"><span className="contact-dot">✦</span><a href={MAPS_URL} target="_blank">{ADDRESS}</a></div>
         </div>
-        <form action={submit}>
-          <input className="hp" name="website" tabIndex={-1} autoComplete="off" />
+        <form onSubmit={handleSubmit}>
+          <input className="hp" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" />
           <div className="cf-group"><input name="name" type="text" placeholder="Your name" required /></div>
           <div className="cf-group"><input name="email" type="email" placeholder="Email address" required /></div>
           <div className="cf-group"><input name="phone" type="tel" placeholder="Phone number (optional)" /></div>
           <div className="cf-group">
-            <select name="subject" required>
+            <select name="subject" required aria-label="I'm inquiring about">
               <option value="">I&apos;m inquiring about...</option>
               <option>Wedding Makeup</option><option>Bridal Trial</option><option>Permanent Makeup</option><option>Facials</option><option>Waxing</option><option>Brow or Lash Lift</option><option>Gift Card</option><option>Membership</option><option>Other</option>
             </select>

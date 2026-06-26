@@ -326,3 +326,9 @@ textarea.field-input{resize:vertical;min-height:80px;}
   .mem-card .mem-body{padding:1rem;}
   .admin-main-new{padding:1rem;}
 }
+
+/* QA launch blockers: keep desktop nav and SMS control discoverable. */
+@media(min-width:901px){
+  .nav-links{display:flex!important;visibility:visible!important;}
+}
+.sticky-call{display:flex;}
