@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 type Service = { name: string; price: string; duration?: string; note?: string };
 type AddOn = { name: string; price: string };
@@ -146,8 +147,8 @@ export function ServicesGrid() {
       )}
 
       <div style={{ marginTop: "2rem", display: "flex", gap: "0.8rem", flexWrap: "wrap" }}>
-        <a href="/book" className="btn btn-pink">Book an Appointment</a>
-        <a href="/#contact" className="btn btn-ghost">Contact the Studio</a>
+        <Link href="/book" className="btn btn-pink">Book an Appointment</Link>
+        <Link href="/#contact" className="btn btn-ghost">Contact the Studio</Link>
       </div>
     </>
   );
